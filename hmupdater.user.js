@@ -3,7 +3,7 @@
  * Copyright (c) 2008 Aurélien Maille
  * Released under the GPL license 
  * 
- * @version 0.6
+ * @version 0.7
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -43,7 +43,7 @@
 //   http://userjs.org/scripts/download/browser/enhancements/aa-gm-functions.js
 //
 
-const HMU_VERSION  = '0.6';
+const HMU_VERSION  = '0.7';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -439,19 +439,21 @@ link.addEventListener('click', function(evt) {
 	item.setAttribute('broken', '');
 	
 	for( name in itemsArray ) {
-		item = item.cloneNode(false);
-		item.setAttribute('name',  name);
-		
 		if( itemsArray[name]['broken'] > 0 ) {
+			item = item.cloneNode(false);
+			item.setAttribute('name',  name);
 			item.setAttribute('count', itemsArray[name]['broken']);
 			item.setAttribute('broken', '1');
-		}
-		else {
-			item.setAttribute('count', itemsArray[name]['notbroken']);
-			item.removeAttribute('broken');
+			items.appendChild(item);
 		}
 		
-		items.appendChild(item);
+		if( itemsArray[name]['notbroken'] > 0 ) {
+			item = item.cloneNode(false);
+			item.setAttribute('name',  name);
+			item.setAttribute('count', itemsArray[name]['notbroken']);
+			item.removeAttribute('broken');
+			items.appendChild(item);
+		}
 	}
 	
 	loadingSection.show();
@@ -467,7 +469,8 @@ link.addEventListener('click', function(evt) {
 		},
 		onerror: function() {
 			xhr.onload = function(){};
-			Message.show("Le site cible ne répond pas\u00A0!");
+			/:\/\/([^\/]+)\//.test(xhr.url);
+			Message.show("Le site <strong>" + RegExp.$1 + "</strong> ne répond pas\u00A0!");
 		},
 		onload: function(responseDetails) {
 			clearTimeout(xhr.timer);
