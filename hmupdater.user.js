@@ -6,7 +6,7 @@
  * Remerciements à Pata, Ma'chi et les utilisateurs pour leurs rapports de bogue
  * et leurs nombreuses suggestions.
  * 
- * @version 1.0
+ * @version 1.1
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -19,20 +19,18 @@
 // @include        http://www.hordes.fr/*
 // ==/UserScript==
 // 
-// --------------------------------------------------------------------
-// 
 // @todo
 // - revoir ixhr, finishUpdate (counter)
 // - Ajouter une croix de fermeture en haut à droite de la boîte à message ?
 //
 
-const HMU_VERSION  = '1.0';
+const HMU_VERSION  = '1.1';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
 
-var HordesMap = { url: 'http://www.hordesmap.com/inc/api_hmupdater.php', label: 'HordesM@p' };
-var Patamap   = { url: 'http://patastream.com/patamap/?page=xmlpost', label: 'la Patamap' };
+var HordesMap = { url: 'http://www.hordesmap.com/inc/api_hmupdater.php', label: 'HordesM@p', id: -1 };
+var Patamap   = { url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9 };
 
 const POSTDATA_URL = '';
 // pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
@@ -94,6 +92,46 @@ if( typeof("".trim) == 'undefined' ) {
 	}
 }
 
+function GM_getArrayValue(name, login, defaultValue)
+{
+	var array = {};
+	
+	try {
+		array = eval(GM_getValue(name, {}));
+	}
+	catch(e) {}
+	
+	return (login in array) ? array[login] : defaultValue;
+}
+
+function GM_setArrayValue(name, login, value)
+{
+	var array = {};
+	
+	try {
+		array = eval(GM_getValue(name, {}));
+	}
+	catch(e) {}
+	
+	array[login] = value;
+	
+	var str = '';
+	
+	if( typeof(array.toSource) == 'undefined' ) {
+		for( var index in array ) {
+			if( typeof(array[index]) != 'string' ) continue;
+			str += ', ' + index + ': "' + array[index] + '"';
+		}
+		
+		str = '({' + str.substr(1, str.length) + '})';
+	}
+	else {
+		str = array.toSource();
+	}
+	
+	GM_setValue(name, str);
+}
+
 //
 // Fonctions raccourcis
 //
@@ -112,26 +150,8 @@ var HMUpdater = {
 	error: false,
 	counter: 0,
 	vars: {
-		key: null,
 		dried: -1,
 		mapInfos: null
-	}
-};
-
-HMUpdater.getPostdataURL = function() {
-	var postdata_urls = {};
-	
-	try {
-		postdata_urls = eval(GM_getValue('postdata_urls', {}));
-	}
-	catch(e) {}
-	
-	if( arguments.length == 1 ) {
-		var login = arguments[0];
-		return (login in postdata_urls) ? postdata_urls[login] : POSTDATA_URL;
-	}
-	else {
-		return postdata_urls;
 	}
 };
 
@@ -171,22 +191,6 @@ HMUpdater.initialize = function(step) {
 		this.vars['mapInfos'] = {};
 		this.vars['mapInfos']['days'] = RegExp.$1;
 		this.vars['mapInfos']['name'] = $('mapInfos').firstChild.data.trim();
-	}
-	
-	//
-	// Récupération de la clef API
-	//
-	this.vars['key'] = null;
-	
-	if( $('sites') != null ) {
-		var listing = $('sites').getElementsByTagName('a');
-		
-		for( var i = 0, m = listing.length; i < m; i++ ) {
-			if( /(?:\?|&)k(?:ey)?=([a-zA-Z0-9]+)/.test(listing[i].href) ) {
-				this.vars['key'] = RegExp.$1;
-				break;
-			}
-		}
 	}
 	
 	//
@@ -295,10 +299,11 @@ HMUpdater.updateMap = function() {
 	//
 	// Récupération du pseudo et de l'URL à appeler
 	//
-	var login = GM_getValue('login', '');
-	var postdata_url = this.getPostdataURL(login);
+	var login  = GM_getValue('login', '');
+	var pubkey = GM_getArrayValue('pubkeys', login, '');
+	var postdata_url = GM_getArrayValue('postdata_urls', login, POSTDATA_URL);
 	
-	if( login == '' || postdata_url == '' ) {
+	if( login == '' || pubkey == '' || postdata_url == '' ) {
 		this.form.onvalidate = function() { HMUpdater.updateMap(); };
 		this.form.show();
 		return false;
@@ -387,7 +392,7 @@ HMUpdater.updateMap = function() {
 	doc.documentElement.appendChild(city);
 	
 	var citizen = doc.createElement('citizen');
-	citizen.setAttribute('key', this.vars['key']);
+	citizen.setAttribute('key', pubkey);
 	citizen.setAttribute('login', login);
 	doc.documentElement.appendChild(citizen);
 	
@@ -534,6 +539,14 @@ HMUpdater.updateMap = function() {
 	
 	for( var i = 0, m = urls.length; i < m; i++ ) {
 		this.counter++;
+		
+		if( urls[i] == Patamap.url ) {
+			citizen.setAttribute('key', Patamap.key);
+		}
+		else {
+			citizen.setAttribute('key', pubkey);
+		}
+		
 		GM_xmlhttpRequest(new ixhr(urls[i], doc));
 	}
 	
@@ -610,12 +623,12 @@ HMUpdater.message = {
 	},
 	error: function(message) {
 		HMUpdater.error = true;
-		this.show(message, ((arguments.length > 1  && arguments[1] != null) ? arguments[1] : this.defaultDelay));
+		this.show(message, ((arguments.length > 1 && arguments[1] != null) ? arguments[1] : this.defaultDelay));
 		
 		var image = document.createElement('img');
 		image.setAttribute('alt', '');
 		image.setAttribute('class', 'error');
-		image.setAttribute('src', 'http://www.hordes.fr/gfx/forum/smiley/h_warning.gif');
+		image.setAttribute('src', '/gfx/forum/smiley/h_warning.gif');
 		this.html.firstChild.lastChild.insertBefore(image,
 			this.html.firstChild.lastChild.firstChild);
 	},
@@ -697,31 +710,17 @@ HMUpdater.form = {
 		GM_setValue('login', login);
 		
 		if( login != '' ) {
-			var postdata_urls = HMUpdater.getPostdataURL();
-			var postdata_url  = $('hmu:url').value.trim();
-			var str = '';
+			var pubkey = $('hmu:pubkey').value.trim();
+			GM_setArrayValue('pubkeys', login, pubkey);
 			
+			var postdata_url = $('hmu:url').value.trim();
 			// hack patam@p carte sans flux
 			if( /^http:\/\/(www\.)?patastream\.(com|fr)\//.test(postdata_url) ) {
 				postdata_url = postdata_url.replace('view_ville', 'xmlpost');
 			}
 			// end hack
 			
-			postdata_urls[login] = postdata_url;
-			
-			if( typeof(postdata_urls.toSource) == 'undefined' ) {
-				for( var index in postdata_urls ) {
-					if( typeof(postdata_urls[index]) != 'string' ) continue;
-					str += ', ' + index + ': "' + postdata_urls[index] + '"';
-				}
-				
-				str = '({' + str.substr(1, str.length) + '})';
-			}
-			else {
-				str = postdata_urls.toSource();
-			}
-			
-			GM_setValue('postdata_urls', str);
+			GM_setArrayValue('postdata_urls', login, postdata_url);
 		}
 	},
 	create: function() {
@@ -754,6 +753,9 @@ HMUpdater.form = {
 '</div><div class="row">' +
 '<label for="hmu:login">Votre pseudo&nbsp;:</label>' +
 '<input type="text" id="hmu:login" class="field" size="35"/>' +
+'</div><div class="row">' +
+'<label for="hmu:pubkey">Votre clef API&nbsp;:</label>' +
+'<input type="text" id="hmu:pubkey" class="field" size="35"/>' +
 '</div><div class="row special">' +
 '<a id="hmu:erase" class="toolAction" href="#outside/hmupdater?do=erase.coords">Réinitialiser les coordonnées</a></div>' +
 '<input type="submit" value="Enregistrer les informations" class="button"/>' +
@@ -763,10 +765,12 @@ HMUpdater.form = {
 		document.body.appendChild(this.html);
 		
 		// Initialisation des champs du formulaire
-		var login = GM_getValue('login', '');
-		var url   = HMUpdater.getPostdataURL(login);
-		$('hmu:login').value = login;
-		$('hmu:url').value   = url;
+		var login  = GM_getValue('login', '');
+		var pubkey = GM_getArrayValue('pubkeys', login, '');
+		var url    = GM_getArrayValue('postdata_urls', login, '');
+		$('hmu:login').value  = login;
+		$('hmu:pubkey').value = pubkey;
+		$('hmu:url').value    = url;
 		$('hmu:url').readOnly = true;
 		
 		var choice = document.getElementsByName('hmu:choice');
@@ -850,6 +854,24 @@ HMUpdater.checkVersion = function(version) {
 	return (v2[0] > v1[0] || (v2[0] == v1[0] && v2[1] > v1[1]));
 };
 
+HMUpdater.getSecretKey = function() {
+	
+	this.lock = true;
+	
+	var xhr = new XMLHttpRequest();
+	xhr.open('GET', '/disclaimer?id=' + Patamap.id + ';rand='  + Math.random(), true);
+	xhr.setRequestHeader('Accept', 'text/xml,application/xml');
+	xhr.setRequestHeader("X-Handler","js.XmlHttp");
+	xhr.onload = function() {
+		if( /name=\"key\"\s+value=\"([a-zA-Z0-9]+)\"/.test(this.responseText) ) {
+			Patamap.key = RegExp.$1;
+		}
+		
+		HMUpdater.lock = false;
+	};
+	xhr.send(null);
+};
+
 //
 // Bouton "HMUpdater"
 //
@@ -909,6 +931,8 @@ if( typeof(unsafeWindow.js) != 'undefined' ) {
 	};
 	
 	HMUpdater.initialize(1);
+	HMUpdater.getSecretKey();
 }
+
 
 
