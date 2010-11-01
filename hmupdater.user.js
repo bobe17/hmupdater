@@ -46,7 +46,7 @@ const HMU_VERSION  = '0.3';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
-const POSTDATA_URL = 'http://patastream.com/patamap/?page=xmlpost';
+const POSTDATA_URL = '';
 var HMU_VARS = [];
 
 
@@ -91,6 +91,10 @@ function HMU_getPostdataURL(force)
 GM_registerMenuCommand('Configurer ' + HMU_APPNAME, function() {
 	HMU_getLogin(true);
 	HMU_getPostdataURL(true);
+});
+
+GM_registerMenuCommand('Réinitialiser les coordonnées', function() {
+	HMU_VARS['coords'].value = '';
 });
 
 if( typeof("".trim) == 'undefined' ) {
@@ -154,8 +158,31 @@ var Message  = {
 	}
 };
 
-// voir bloc 'TEMPORAIRE' un peu plus bas
-HMU_VARS['eraseCoords'] = true;
+//
+// On s'intercalle devant la méthode js.XmlHttp.onEnd() pour mettre à jour
+// les coordonnées à chaque changement de case
+//
+unsafeWindow.js.XmlHttp._hmu_onEnd = unsafeWindow.js.XmlHttp.onEnd;
+unsafeWindow.js.XmlHttp.onEnd = function() {
+	var url = this.urlForBack;
+	
+	if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
+		var node = document.getElementById('generic_section');
+		if( node != null && node.hasAttribute('hmupdater:coords') ) {
+			var coords = node.getAttribute('hmupdater:coords').split('.');
+			
+			coords[0] = parseInt(coords[0]) + parseInt(RegExp.$1);
+			coords[1] = parseInt(coords[1]) + parseInt(RegExp.$2);
+			
+			node.setAttribute('hmupdater:coords', coords.join('.'));
+		}
+	}
+	
+	this._hmu_onEnd();
+};
+
+HMU_VARS['coords'] = document.createAttribute('hmupdater:coords');
+HMU_VARS['coords'].value = '';
 
 //
 // lancement du refresh
@@ -173,7 +200,9 @@ if( document.getElementById('hordes_login') != null ) {
 	return false;
 }
 
-if( document.getElementById('hmupdater:link') != null || document.getElementById('generic_section') == null ) {
+var GENERIC_SECTION_NODE = document.getElementById('generic_section');
+
+if( document.getElementById('hmupdater:link') != null || GENERIC_SECTION_NODE == null ) {
 	return false;
 }
 
@@ -211,96 +240,18 @@ if( document.getElementById('sites') != null ) {
 	}
 }
 
-var GENERIC_SECTION_NODE = document.getElementById('generic_section');
-
 var refresh_link = document.evaluate('a[@href="#outside/refresh"]',
 	GENERIC_SECTION_NODE, null, XPathResult.ANY_TYPE, null);
 if( (refresh_link = refresh_link.iterateNext()) == null ) {
 	return false;
 }
 
-//////////////////////////
-// TEMPORAIRE
-// 
-// But de la fonction:
-// Le problème est que je ne peux pas détecter (actuellement) un
-// changement de case, ni obtenir les coordonnées de la case par moi-même.
-// Je dois donc demander systématiquement les coordonnées au joueur.
-// La fonction suivante détecte si l'utilisateur fait certaines actions
-// qui ont rafraichi la page sans que ce soit un changement de case
-// (liens actualiser, fouiller, explorer, déblayer, envoyer un message dans le chat, etc).
-// Dans ces cas-là, on réutilise les coordonnées gardées en mémoire, ce sera
-// toujours ça...
-if( GENERIC_SECTION_NODE.hasAttribute('hmupdater:init') == false ) {
-
-	GENERIC_SECTION_NODE.addEventListener('click', function(evt) {
-		var node = evt.target;
-		
-		if( evt.eventPhase != evt.CAPTURING_PHASE ) {
-			return false;
-		}
-		
-		// liens "actualiser"
-		if( node.nodeName == 'A' && node.getAttribute('href') == '#outside/refresh' ) {
-			HMU_VARS['eraseCoords'] = false;
-		}
-		// déplacement d'objets entre le sac et le sol et vice versa
-		else if( node.nodeName == 'IMG' && node.getAttribute('alt') == 'item' && node.parentNode.nodeName == 'A' ) {
-			HMU_VARS['eraseCoords'] = false;
-		}
-		// envoi de message sur le "chat"
-		// - firefox prend aussi le click si on sélectionne le "bouton" avec la touche tab + entrée
-		//   ou si on tape entrée dans le champ texte à la fin de son message.
-		//   Tant mieux, ça me facilite les choses.
-		else if( node.nodeName == 'INPUT' && node.getAttribute('name') == 'submit' ) {
-			HMU_VARS['eraseCoords'] = false;
-		}
-		// plus compliqué pour les liens de la colonne 'left' car le target peut avoir
-		// plusieurs valeurs, on va s'y prendre autrement et remonter l'arborescence
-		else {
-			while( node.nodeName != 'A' && node != evt.currentTarget ) {
-				node = node.parentNode;
-			}
-			
-			if( node.nodeName == 'A' ) {
-				var target = node.getAttribute('href');
-				
-				if( target.substr(0, 8) == '#outside' ) {
-					switch( target ) {
-						case '#outside/pick':// fouille
-						case '#outside/dig':// exploration de bâtiment
-						case '#outside/extractBuilding':// déblaiement de ruines
-							HMU_VARS['eraseCoords'] = false;
-							break;
-					}
-				}
-				else if( /#tool\/[0-9]+\/use/.test(target) ) {// Utilisation d'un objet
-					HMU_VARS['eraseCoords'] = false;
-				}
-			}
-		}
-	}, true);
-	
-	// On s'occupe aussi de la liste déroulante de changement de statut de la zone
-	GENERIC_SECTION_NODE.addEventListener('change', function(evt) {
-		if( evt.target.getAttribute('name') == 'tid' ) {
-			HMU_VARS['eraseCoords'] = false;
-		}
-	}, true);
-	
-	GENERIC_SECTION_NODE.setAttribute('hmupdater:init', 'true');
-}
-//////////////////////////
-
-if( HMU_VARS['eraseCoords'] ) {
-	HMU_VARS['coords'] = '';
-}
-else {
-	HMU_VARS['eraseCoords'] = true;
+if( HMU_VARS['coords'].ownerElement == null ) {
+	GENERIC_SECTION_NODE.setAttributeNode(HMU_VARS['coords']);
 }
 
 // Utilisé pour éviter de renvoyer le XML si rien n'a changé sur la case
-HMU_VARS['zone_updated'] = false;
+HMU_VARS['updatePerformed'] = false;
 
 //
 // Ajout du lien de mise à jour
@@ -315,6 +266,10 @@ link.setAttribute('href', '#outside/hmupdater');
 link.style.cssText = cssText;
 
 link.appendChild(document.createTextNode('Mettre à jour la M@p'));
+
+if( HMU_VARS['coords'].value != '' ) {
+	link.firstChild.appendData(' (' + HMU_VARS['coords'].value + ')');
+}
 
 refresh_link.parentNode.insertBefore(link, refresh_link.nextSibling);
 refresh_link.parentNode.insertBefore(document.createTextNode(' '), refresh_link);
@@ -344,12 +299,12 @@ link.addEventListener('click', function(evt) {
 	//
 	// Récupération des coordonnées de la case
 	//
-	var coords = HMU_VARS['coords'];
+	var coords = HMU_VARS['coords'].value;
 	if( coords == '' ) {
 		if( (coords = prompt("Saisissez les coordonnées de la case (format\u00A0: x.y)")) != null ) {
 			if( /^[0-9]{1,2}(\.|,)[0-9]{1,2}$/.test(coords) ) {
 				coords = coords.replace(',', '.');
-				HMU_VARS['coords'] = coords;
+				HMU_VARS['coords'].value = coords;
 			}
 			else {
 				Message.show("Mauvais format de coordonnées\u00A0! (formats acceptés\u00A0: x.y ou x,y)", 6);
@@ -532,7 +487,7 @@ link.addEventListener('click', function(evt) {
 					}
 					else if( code == 'ok' ) {
 						Message.show("La M@p a été mise à jour en " + coords.join('.') + "\u00A0!");
-						HMU_VARS['zone_updated'] = true;
+						HMU_VARS['updatePerformed'] = true;
 					}
 				}
 				catch(e) {}
@@ -549,7 +504,7 @@ link.addEventListener('click', function(evt) {
 		}
 	};
 	
-	if( HMU_VARS['zone_updated'] == false ) {
+	if( HMU_VARS['updatePerformed'] == false ) {
 		GM_xmlhttpRequest(xhr);
 		xhr.timer = setTimeout(xhr.onerror, (HMU_TIMEOUT * 1000));
 	}
