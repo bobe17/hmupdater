@@ -158,6 +158,82 @@ var HMUpdater = {
 	}
 };
 
+//////////////////////
+//    TEMPORAIRE    //
+//////////////////////
+var Debug = {
+	html: null,
+	init: function() {
+		if( DEBUG_MODE == false ) {
+			return;
+		}
+		
+		if( this.html == null ) {
+			this.create();
+		}
+		
+		this.html.style.display = 'block';
+		this.html.lastChild.innerHTML = '';
+	},
+	dump: function(data) {
+		if( this.html == null ) {
+			return;
+		}
+		
+		var dump = document.createElement('div');
+		
+		if( typeof(data) != 'string' ) {
+			data = new XMLSerializer().serializeToString(data).split('><').join('>\r\n<');
+		}
+		
+		dump.appendChild(document.createTextNode(data));
+		this.html.lastChild.appendChild(dump);
+	},
+	create: function() {
+		HMUpdater.addStyle('div#hmu\\:debug { position: fixed; z-index: 100; top: 20px;' +
+			'right: 20px; width:320px; overflow: auto; background-color: white; color: black;' +
+			'font: 12px "Bitstream Vera Sans"; border: 1px solid silver; padding: 5px 8px; }');
+		HMUpdater.addStyle('div#hmu\\:debug div:not(:first-child) { white-space: pre; margin-top: 5px;' +
+			'border-top: 1px solid silver; padding-top: 5px; }');
+		HMUpdater.addStyle('div#hmu\\:debug a:link, div#debug-box a:visited { text-decoration: underline; color: #228; }');
+		HMUpdater.addStyle('div#hmu\\:debug a:hover { text-decoration: underline; color: maroon; }');
+		HMUpdater.addStyle('div#hmu\\:debug div + div { margin-top: 5px; padding-top: 5px; border-top: 1px solid silver; }');
+		
+		this.html = document.createElement('div');
+		this.html.setAttribute('id', 'hmu:debug');
+		this.html.innerHTML = '<div><a href="#toggle">toggle</a> - <a href="#close">close</a></div><div></div>';
+		
+		// Lien toggle
+		this.html.firstChild.firstChild.addEventListener('click', function(evt) {
+			var node = this.parentNode.parentNode.lastChild;
+			var display = display = window.getComputedStyle(node, null).display;
+			node.style.display = display == 'none' ? 'block' : 'none';
+			
+			evt.preventDefault();
+		}, false);
+		
+		// Lien close
+		this.html.firstChild.lastChild.addEventListener('click', function(evt) {
+			this.parentNode.parentNode.style.display = 'none';
+			evt.preventDefault();
+		}, false);
+		
+		document.body.appendChild(this.html);
+	}
+};
+
+const DEBUG_MODE = false;
+
+// TODO : temporaire
+if( document.location.host == 'projects.nog' ) {
+	GM_setValue('login', 'test');
+}
+
+window.wrappedJSObject.HMUpdater = HMUpdater;// TODO temporaire
+window.wrappedJSObject.PC = PC;
+window.wrappedJSObject.Patamap = Patamap;
+
+
 HMUpdater.initialize = function(step) {
 	
 	if( document.location.hash.indexOf('#outside') == -1 ) {
@@ -459,6 +535,10 @@ HMUpdater.updateMap = function() {
 		}
 	}
 	
+	// Déboguage
+	Debug.init();
+	Debug.dump(doc);
+	
 	function ixhr(url, doc)
 	{
 		this.timer   = null;
@@ -538,6 +618,8 @@ HMUpdater.updateMap = function() {
 						(message != null ? message.length/10 : null)
 					);
 				}
+				
+				Debug.dump(responseDetails.responseText);
 			}
 			else {
 				HMUpdater.message.error("Erreur HTTP renvoyée par " + target +
