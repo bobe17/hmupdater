@@ -1,0 +1,40 @@
+<!-- DTD pour le flux XML envoyé par HMUpdater -->
+
+<!ELEMENT hordes (headers,city,citizen,zone,items)>
+<!ELEMENT headers EMPTY>
+<!ATTLIST headers
+  version	CDATA		#REQUIRED
+  generator	CDATA		#REQUIRED
+>
+
+<!ELEMENT city EMPTY>
+<!ATTLIST city
+  name	CDATA	#REQUIRED
+  days	CDATA	#REQUIRED
+>
+
+<!ELEMENT citizen EMPTY>
+<!ATTLIST citizen
+  key	CDATA	#REQUIRED
+  login	CDATA	#REQUIRED
+>
+
+<!ELEMENT zone EMPTY>
+<!ATTLIST zone
+  x			CDATA	#REQUIRED
+  y			CDATA	#REQUIRED
+  tag		CDATA	#REQUIRED
+  zombie	CDATA	#REQUIRED
+  name		CDATA	#IMPLIED
+  ruine		CDATA	#IMPLIED
+  dried		(1|0|-1)	"-1"
+>
+
+<!ELEMENT items (item)*>
+<!ELEMENT item EMPTY>
+<!ATTLIST item
+  name		CDATA	#REQUIRED
+  count		CDATA	#REQUIRED
+  broken	(1|0)	"0"
+>
+
