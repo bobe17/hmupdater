@@ -3,7 +3,7 @@
  * Copyright (c) 2008 Aurélien Maille
  * Released under the GPL license 
  * 
- * @version 0.3
+ * @version 0.4
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -40,9 +40,10 @@
 // - Pouvoir configurer de façon user-friendly le login et l'URL de l'application réceptrice
 // - Lien parfois non ajouté à la sortie de la ville; obligé d'actualiser la page
 // - Compatibilité avec Opera et Safari ? (plus lointain et incertain)
+//   http://userjs.org/scripts/download/browser/enhancements/aa-gm-functions.js
 //
 
-const HMU_VERSION  = '0.3';
+const HMU_VERSION  = '0.4';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -168,9 +169,10 @@ unsafeWindow.js.XmlHttp.onEnd = function() {
 	
 	if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
 		var node = document.getElementById('generic_section');
-		if( node != null && node.hasAttribute('hmupdater:coords') ) {
-			var coords = node.getAttribute('hmupdater:coords').split('.');
+		var coords = null;
+		if( node != null && (coords = node.getAttribute('hmupdater:coords')) != '' ) {
 			
+			coords = coords.split('.');
 			coords[0] = parseInt(coords[0]) + parseInt(RegExp.$1);
 			coords[1] = parseInt(coords[1]) + parseInt(RegExp.$2);
 			
