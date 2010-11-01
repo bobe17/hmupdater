@@ -3,7 +3,7 @@
  * Copyright (c) 2008 Aurélien Maille
  * Released under the GPL license 
  * 
- * @version 0.7
+ * @version 0.8
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -43,7 +43,7 @@
 //   http://userjs.org/scripts/download/browser/enhancements/aa-gm-functions.js
 //
 
-const HMU_VERSION  = '0.7';
+const HMU_VERSION  = '0.8';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -233,14 +233,6 @@ if( document.getElementById('sites') != null ) {
 			HMU_VARS['key'] = RegExp.$1;
 			break;
 		}
-	}
-	
-	if( HMU_VARS['key'] == null ) {// Applications externes non autorisées; pas de clef API
-		Message.show("Impossible de récupérer votre clef API. "
-			+ "Avez-vous pensé à autoriser les applications externes dans la section "
-			+ "<a href='/#ghost/city?go=ghost/options'>Votre âme/Réglages</a>\u00A0?", 20);
-		clearInterval(timer);
-		return false;
 	}
 }
 
@@ -482,9 +474,12 @@ link.addEventListener('click', function(evt) {
 					var doc = new DOMParser().parseFromString(responseDetails.responseText, 'application/xml');
 					code = doc.getElementsByTagName('error')[0].getAttribute('code');
 					
-					if( Number(doc.getElementsByTagName('headers')[0].getAttribute('version')) > HMU_VERSION ) {
-						Message.show("Une nouvelle version du script est disponible en " +
-							"<a href='" + HMU_APPHOME + "'>téléchargement</a>.<br>" +
+					var v1 = String(HMU_VERSION).split('.');
+					var v2 = doc.getElementsByTagName('headers')[0].getAttribute('version').split('.');
+					
+					if( v2[0] > v1[0] || (v2[0] == v1[0] && v2[1] > v1[1]) ) {
+						Message.show("Une nouvelle version du script est disponible " +
+							"en <a href='" + HMU_APPHOME + "'>téléchargement</a>.<br>" +
 							"Votre version peut ne plus fonctionner correctement, " +
 							"vous devriez faire la mise à jour.", -1);
 					}
