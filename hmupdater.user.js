@@ -3,7 +3,7 @@
  * Copyright (c) 2008 Aurélien Maille
  * Released under the GPL license 
  * 
- * @version 0.5
+ * @version 0.6
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -28,8 +28,7 @@
 // @name           HMUpdater
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour de HordesM@p à partir de hordes.fr
-// @include        http://www.hordes.fr/#outside?sk=*
-// @include        http://www.hordes.fr/#outside
+// @include        http://www.hordes.fr/#outside*
 // @include        http://www.hordes.fr/#
 // @include        http://www.hordes.fr/
 // ==/UserScript==
@@ -44,7 +43,7 @@
 //   http://userjs.org/scripts/download/browser/enhancements/aa-gm-functions.js
 //
 
-const HMU_VERSION  = '0.5';
+const HMU_VERSION  = '0.6';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -96,7 +95,7 @@ GM_registerMenuCommand('Configurer ' + HMU_APPNAME, function() {
 });
 
 GM_registerMenuCommand('Réinitialiser les coordonnées', function() {
-	HMU_VARS['coords'].value = '';
+	HMU_VARS['coords'] = null;
 });
 
 if( typeof("".trim) == 'undefined' ) {
@@ -161,31 +160,33 @@ var Message  = {
 };
 
 //
-// On s'intercalle devant la méthode js.XmlHttp.onEnd() pour mettre à jour
+// On s'intercalle devant la méthode js.XmlHttp.onData() pour mettre à jour
 // les coordonnées à chaque changement de case
 //
-unsafeWindow.js.XmlHttp._hmu_onEnd = unsafeWindow.js.XmlHttp.onEnd;
-unsafeWindow.js.XmlHttp.onEnd = function() {
+unsafeWindow.js.XmlHttp._hmu_onData = unsafeWindow.js.XmlHttp.onData;
+unsafeWindow.js.XmlHttp.onData = function(data) {
 	var url = this.urlForBack;
 	
 	if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
 		var node = document.getElementById('generic_section');
-		var coords = null;
-		if( node != null && (coords = node.getAttribute('hmupdater:coords')) != '' ) {
+		if( node != null && HMU_VARS['coords'] != null ) {
 			
-			coords = coords.split('.');
+			coords = HMU_VARS['coords'].split('.');
 			coords[0] = parseInt(coords[0]) + parseInt(RegExp.$1);
 			coords[1] = parseInt(coords[1]) + parseInt(RegExp.$2);
 			
-			node.setAttribute('hmupdater:coords', coords.join('.'));
+			HMU_VARS['coords'] = coords.join('.');
 		}
 	}
 	
-	this._hmu_onEnd();
+	this._hmu_onData(data);
+	
+	if( document.location.hash.indexOf('#outside') == -1 ) {
+		HMU_VARS['coords'] = null;
+	}
 };
 
-HMU_VARS['coords'] = document.createAttribute('hmupdater:coords');
-HMU_VARS['coords'].value = '';
+HMU_VARS['coords'] = null;
 
 //
 // lancement du refresh
@@ -249,10 +250,6 @@ if( (refresh_link = refresh_link.iterateNext()) == null ) {
 	return false;
 }
 
-if( HMU_VARS['coords'].ownerElement == null ) {
-	GENERIC_SECTION_NODE.setAttributeNode(HMU_VARS['coords']);
-}
-
 // Utilisé pour éviter de renvoyer le XML si rien n'a changé sur la case
 HMU_VARS['updatePerformed'] = false;
 
@@ -270,8 +267,8 @@ link.style.cssText = cssText;
 
 link.appendChild(document.createTextNode('Mettre à jour la M@p'));
 
-if( HMU_VARS['coords'].value != '' ) {
-	link.firstChild.appendData(' (' + HMU_VARS['coords'].value + ')');
+if( HMU_VARS['coords'] != null ) {
+	link.firstChild.appendData(' (' + HMU_VARS['coords'] + ')');
 }
 
 refresh_link.parentNode.insertBefore(link, refresh_link.nextSibling);
@@ -302,12 +299,12 @@ link.addEventListener('click', function(evt) {
 	//
 	// Récupération des coordonnées de la case
 	//
-	var coords = HMU_VARS['coords'].value;
-	if( coords == '' ) {
+	var coords = HMU_VARS['coords'];
+	if( coords == null ) {
 		if( (coords = prompt("Saisissez les coordonnées de la case (format\u00A0: x.y)")) != null ) {
 			if( /^[0-9]{1,2}(\.|,)[0-9]{1,2}$/.test(coords) ) {
 				coords = coords.replace(',', '.');
-				HMU_VARS['coords'].value = coords;
+				HMU_VARS['coords'] = coords;
 			}
 			else {
 				Message.show("Mauvais format de coordonnées\u00A0! (formats acceptés\u00A0: x.y ou x,y)", 6);
