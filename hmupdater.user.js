@@ -3,7 +3,7 @@
  * Copyright (c) 2008 Aurélien Maille
  * Released under the GPL license 
  * 
- * @version 0.2
+ * @version 0.3
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -38,53 +38,65 @@
 // @todo
 // - Récupération automatique des coordonnées de la case
 // - Pouvoir configurer de façon user-friendly le login et l'URL de l'application réceptrice
-// - Pouvoir configurer une URL pour chaque login
+// - Lien parfois non ajouté à la sortie de la ville; obligé d'actualiser la page
 // - Compatibilité avec Opera et Safari ? (plus lointain et incertain)
-// - Ajouter une entrée dans la partie "chat" indiquant la mise à jour de hordesm@p
-//   (pour voir facilement si objet pris/déposé après la mise à jour) ? Compliqué
-// - Vérifier si le bricolage pour gérer le timeout est correct ou si on peut faire autrement
-// - Lien parfois non ajouté à la sortie de la ville; obligé d'actualiser la page. Investiguer
 //
 
-const HMU_VERSION  = '0.2';
+const HMU_VERSION  = '0.3';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
-const POSTDATA_URL = '';
+const POSTDATA_URL = 'http://patastream.com/patamap/?page=xmlpost';
+var HMU_VARS = [];
 
 
-function HMU_setLogin()
+function HMU_getLogin(force)
 {
-	var login;
-	if( (login = prompt("Saisissez votre pseudo de joueur à hordes :", GM_getValue('login', ''))) != null ) {
+	var login = GM_getValue('login', '');
+	
+	if( (force || login == '') && (login = prompt("Saisissez votre pseudo de joueur à hordes :", login)) != null ) {
+		login = login.trim();
 		GM_setValue('login', login);
 	}
 	
 	return login == null ? '' : login;
 }
 
-function HMU_setPostdataURL()
+function HMU_getPostdataURL(force)
 {
-	var postdata_url;
-	if( (postdata_url = prompt("Saisissez l’URL de l’application externe :", GM_getValue('postdata_url', ''))) != null ) {
+	var login = GM_getValue('login', '');
+	var postdata_urls = {};
+	
+	try {
+		postdata_urls = eval(GM_getValue('postdata_urls', {}));
+	}
+	catch(e) {}
+	
+	var postdata_url = (login in postdata_urls) ? postdata_urls[login] : POSTDATA_URL;
+	
+	if( (force || postdata_url == '') && (postdata_url = prompt("Saisissez l’URL de l’application externe :", postdata_url)) != null ) {
 		// hack patam@p
-		if( /^http:\/\/patastream\.com\//.test(postdata_url) ) {
+		if( /^http:\/\/(www\.)?patastream\.(com|fr)\//.test(postdata_url) ) {
 			postdata_url = postdata_url.replace('view_ville', 'xmlpost');
 		}
 		// end hack
-		GM_setValue('postdata_url', postdata_url);
+		postdata_url = postdata_url.trim();
+		postdata_urls[login] = postdata_url;
+		GM_setValue('postdata_urls', postdata_urls.toSource());
 	}
 	
 	return postdata_url == null ? '' : postdata_url;
 }
 
 GM_registerMenuCommand('Configurer ' + HMU_APPNAME, function() {
-	HMU_setLogin();
-	HMU_setPostdataURL();
+	HMU_getLogin(true);
+	HMU_getPostdataURL(true);
 });
 
-if( GM_getValue('postdata_url', '') == '' ) {
-	GM_setValue('postdata_url', POSTDATA_URL);
+if( typeof("".trim) == 'undefined' ) {
+	String.prototype.trim = function() {
+		return this.replace(/^\s+|\s+$/g, '');
+	}
 }
 
 var loadingSection = {
@@ -98,48 +110,52 @@ var loadingSection = {
 	}
 };
 
-var resultMessage  = {
+var Message  = {
 	timer: null,
-	box: null,
-	// function(message, autoHide = true)
+	html: null,
+	// function(message, delay = 4)
 	show: function(message) {
-		resultMessage.box.innerHTML = "<strong>HMUpdater</strong>\u00A0: " + message;
-		resultMessage.box.style.setProperty('opacity', '1.0', '');
-		resultMessage.box.style.display = 'block';
-		
-		if( arguments.length == 1 || arguments[1] == true ) {
-			setTimeout(function() {resultMessage.hide();}, 4000);
+		if( this.html == null ) {
+			this.create();
 		}
+		
+		this.html.innerHTML = "<strong>HMUpdater</strong>\u00A0: " + message;
+		this.html.style.opacity = '1.0';
+		this.html.style.display = 'block';
+		
+		var delay = arguments.length > 1 ? arguments[1] : 4;
+		if( delay > 0 ) {
+			setTimeout(function() {Message.hide();}, (delay * 1000));
+		}
+		
+		loadingSection.hide();
 	},
 	hide: function() {
-		resultMessage.timer = setInterval(function() {resultMessage.reduceOpacity();}, 60);
+		this.timer = setInterval(function() {Message.reduceOpacity();}, 60);
 	},
 	reduceOpacity: function() {
-		var tmp = parseFloat(resultMessage.box.style.getPropertyValue('opacity'));
-		tmp = (Math.round((tmp - 0.1) * 10) / 10);
+		var opacity = parseFloat(this.html.style.opacity);
+		opacity = (Math.round((opacity - 0.1) * 10) / 10);
 		
-		resultMessage.box.style.setProperty('opacity', tmp, '');
+		this.html.style.opacity = opacity;
 		
-		if( tmp <= 0 ) {
-			resultMessage.box.style.display = 'none';
-			clearInterval(resultMessage.timer);
+		if( opacity <= 0 ) {
+			this.html.style.display = 'none';
+			clearInterval(this.timer);
 		}
+	},
+	create: function() {
+		this.html = document.createElement('div');
+		this.html.setAttribute('id', 'hmupdater:message');
+		this.html.style.cssText = 'display:none; min-width:300px; max-width:550px; position:fixed;' +
+			'right: 5px; bottom: 5px; z-index:10; padding:5px 10px; color:#f0d79e;' +
+			'background-color:#5c2b20; border:1px solid #b37c4a; outline:2px solid black;';
+		document.body.appendChild(this.html);
 	}
 };
 
-//
-// Insertion du bloc message
-//
-resultMessage.box = document.createElement('div');
-resultMessage.box.setAttribute('id', 'hmu-message');
-document.body.insertBefore(resultMessage.box, document.body.firstChild);
-
-resultMessage.box.style.cssText = 'display:none; min-width:300px; max-width:550px; position:fixed;' +
-	'right: 5px; bottom: 5px; z-index:10; padding:5px 10px; color:#f0d79e;' +
-	'background-color:#5c2b20; border:1px solid #b37c4a; outline:2px solid black;';
-
 // voir bloc 'TEMPORAIRE' un peu plus bas
-var eraseCoords = true;
+HMU_VARS['eraseCoords'] = true;
 
 //
 // lancement du refresh
@@ -151,38 +167,46 @@ var timer = setInterval(function() {
 //
 if( document.getElementById('hordes_login') != null ) {
 	document.getElementById('hordes_login').addEventListener('submit', function(evt) {
-		var login = document.getElementById('login').value;
-		// hack patam@p pour éviter confusion de villes entre plusieurs comptes
-		if( /^http:\/\/patastream\.com\//.test(GM_getValue('postdata_url', '')) && login != GM_getValue('login', '') ) {
-			GM_setValue('postdata_url', POSTDATA_URL);
-		}
-		// end hack
-		GM_setValue('login', login);
+		GM_setValue('login', document.getElementById('login').value.trim());
 	}, false);
 	clearInterval(timer);
 	return false;
 }
 
-if( document.getElementById('hmupdater') != null || document.getElementById('generic_section') == null ) {
+if( document.getElementById('hmupdater:link') != null || document.getElementById('generic_section') == null ) {
 	return false;
 }
 
 //
+// Infos sur la ville
+//
+var mapInfos = document.getElementById('mapInfos');
+/Jour\s+([0-9]+),/.test(mapInfos.textContent);
+
+HMU_VARS['mapInfos'] = [];
+HMU_VARS['mapInfos']['days'] = RegExp.$1;
+HMU_VARS['mapInfos']['name'] = mapInfos.firstChild.data.trim();
+
+//
 // Récupération de la clef API
 //
-var key = null;
+HMU_VARS['key'] = null;
 
 if( document.getElementById('sites') != null ) {
 	var listing = document.getElementById('sites').getElementsByTagName('a');
 	
 	for( var i = 0, m = listing.length; i < m; i++ ) {
 		if( /(?:\?|&)key=([a-zA-Z0-9]+)/.test(listing[i].href) ) {
-			key = RegExp.$1;
+			HMU_VARS['key'] = RegExp.$1;
 			break;
 		}
 	}
 	
-	if( key == null ) {// Applications externes non autorisées; pas de clef API
+	if( HMU_VARS['key'] == null ) {// Applications externes non autorisées; pas de clef API
+		Message.show("Impossible de récupérer votre clef API. "
+			+ "Avez-vous pensé à autoriser les applications externes dans la section "
+			+ "<a href='/#ghost/city?go=ghost/options'>Votre âme/Réglages</a>\u00A0?", 20);
+		clearInterval(timer);
 		return false;
 	}
 }
@@ -208,13 +232,7 @@ if( (refresh_link = refresh_link.iterateNext()) == null ) {
 // Dans ces cas-là, on réutilise les coordonnées gardées en mémoire, ce sera
 // toujours ça...
 if( GENERIC_SECTION_NODE.hasAttribute('hmupdater:init') == false ) {
-/*	GM_log('listeners added to GENERIC_SECTION_NODE');
-	GENERIC_SECTION_NODE.addEventListener('DOMNodeRemoved', function(evt){
-		if( evt.target.nodeType == 1 ) {// TODO : Node existe mais Node.ELEMENT_NODE est undefined, comprends pas...
-			GM_log('node removed : tag ' + evt.target.nodeName + ', id ' + evt.target.id);
-		}
-	}, false);*/
-	
+
 	GENERIC_SECTION_NODE.addEventListener('click', function(evt) {
 		var node = evt.target;
 		
@@ -224,18 +242,18 @@ if( GENERIC_SECTION_NODE.hasAttribute('hmupdater:init') == false ) {
 		
 		// liens "actualiser"
 		if( node.nodeName == 'A' && node.getAttribute('href') == '#outside/refresh' ) {
-			eraseCoords = false;
+			HMU_VARS['eraseCoords'] = false;
 		}
 		// déplacement d'objets entre le sac et le sol et vice versa
 		else if( node.nodeName == 'IMG' && node.getAttribute('alt') == 'item' && node.parentNode.nodeName == 'A' ) {
-			eraseCoords = false;
+			HMU_VARS['eraseCoords'] = false;
 		}
 		// envoi de message sur le "chat"
 		// - firefox prend aussi le click si on sélectionne le "bouton" avec la touche tab + entrée
 		//   ou si on tape entrée dans le champ texte à la fin de son message.
 		//   Tant mieux, ça me facilite les choses.
 		else if( node.nodeName == 'INPUT' && node.getAttribute('name') == 'submit' ) {
-			eraseCoords = false;
+			HMU_VARS['eraseCoords'] = false;
 		}
 		// plus compliqué pour les liens de la colonne 'left' car le target peut avoir
 		// plusieurs valeurs, on va s'y prendre autrement et remonter l'arborescence
@@ -252,12 +270,12 @@ if( GENERIC_SECTION_NODE.hasAttribute('hmupdater:init') == false ) {
 						case '#outside/pick':// fouille
 						case '#outside/dig':// exploration de bâtiment
 						case '#outside/extractBuilding':// déblaiement de ruines
-							eraseCoords = false;
+							HMU_VARS['eraseCoords'] = false;
 							break;
 					}
 				}
 				else if( /#tool\/[0-9]+\/use/.test(target) ) {// Utilisation d'un objet
-					eraseCoords = false;
+					HMU_VARS['eraseCoords'] = false;
 				}
 			}
 		}
@@ -266,7 +284,7 @@ if( GENERIC_SECTION_NODE.hasAttribute('hmupdater:init') == false ) {
 	// On s'occupe aussi de la liste déroulante de changement de statut de la zone
 	GENERIC_SECTION_NODE.addEventListener('change', function(evt) {
 		if( evt.target.getAttribute('name') == 'tid' ) {
-			eraseCoords = false;
+			HMU_VARS['eraseCoords'] = false;
 		}
 	}, true);
 	
@@ -274,15 +292,15 @@ if( GENERIC_SECTION_NODE.hasAttribute('hmupdater:init') == false ) {
 }
 //////////////////////////
 
-if( eraseCoords ) {
-	GM_setValue('coords', '');
+if( HMU_VARS['eraseCoords'] ) {
+	HMU_VARS['coords'] = '';
 }
 else {
-	eraseCoords = true;
+	HMU_VARS['eraseCoords'] = true;
 }
 
 // Utilisé pour éviter de renvoyer le XML si rien n'a changé sur la case
-GM_setValue('zone_updated', false);
+HMU_VARS['zone_updated'] = false;
 
 //
 // Ajout du lien de mise à jour
@@ -292,8 +310,8 @@ refresh_link.removeAttribute('class');
 refresh_link.style.cssText = cssText;
 
 var link = document.createElement('a');
-link.setAttribute('id',    'hmupdater');
-link.setAttribute('href',  '#outside/hmupdater');
+link.setAttribute('id',   'hmupdater:link');
+link.setAttribute('href', '#outside/hmupdater');
 link.style.cssText = cssText;
 
 link.appendChild(document.createTextNode('Mettre à jour la M@p'));
@@ -310,7 +328,7 @@ link.addEventListener('click', function(evt) {
 	//
 	// Récupération du pseudo
 	//
-	var login = GM_getValue('login', '') || HMU_setLogin();
+	var login = HMU_getLogin(false);
 	if( login == '' ) {
 		return false;
 	}
@@ -318,7 +336,7 @@ link.addEventListener('click', function(evt) {
 	//
 	// Récupération de l'URL à appeler
 	//
-	var postdata_url = GM_getValue('postdata_url', '') || HMU_setPostdataURL();
+	var postdata_url = HMU_getPostdataURL(false);
 	if( postdata_url == '' ) {
 		return false;
 	}
@@ -326,13 +344,15 @@ link.addEventListener('click', function(evt) {
 	//
 	// Récupération des coordonnées de la case
 	//
-	var coords = GM_getValue('coords', '');
+	var coords = HMU_VARS['coords'];
 	if( coords == '' ) {
 		if( (coords = prompt("Saisissez les coordonnées de la case (format\u00A0: x.y)")) != null ) {
-			if( /^[0-9]{1,2}\.[0-9]{1,2}$/.test(coords) ) {
-				GM_setValue('coords', coords);
+			if( /^[0-9]{1,2}(\.|,)[0-9]{1,2}$/.test(coords) ) {
+				coords = coords.replace(',', '.');
+				HMU_VARS['coords'] = coords;
 			}
 			else {
+				Message.show("Mauvais format de coordonnées\u00A0! (formats acceptés\u00A0: x.y ou x,y)", 6);
 				return false;
 			}
 		}
@@ -367,8 +387,25 @@ link.addEventListener('click', function(evt) {
 	var zombiePts = -1;
 	if( document.getElementById('zombiePts') != null ) {
 		zombiePts = document.getElementById('zombiePts').firstChild.data;
-		/([0-9]+)\spoints?/.test(zombiePts);
+		/([0-9]+)\s+points?/.test(zombiePts);
 		zombiePts = RegExp.$1;
+	}
+	
+	// Zone épuisée ?
+	var dried = -1;
+	var driedTest = document.evaluate('div[@class="left"]/div[@class="driedZone"]',
+		GENERIC_SECTION_NODE, null, XPathResult.BOOLEAN_TYPE, null).booleanValue;
+	if( driedTest ) {// bloc "La zone est épuisée" présent
+		dried = 1;
+	}
+	else {
+		// Si les zombies contrôlent la zone, on ne sait pas, sinon,
+		// c'est que la zone n'est pas épuisée
+		driedTest = document.evaluate('div[@class="feist"]',
+			GENERIC_SECTION_NODE, null, XPathResult.BOOLEAN_TYPE, null).booleanValue;
+		if( !driedTest ) {
+			dried = 0;
+		}
 	}
 	
 	// Listing des objets présents par terre
@@ -380,7 +417,6 @@ link.addEventListener('click', function(evt) {
 	while( (item = items.iterateNext()) != null ) {
 		name = item.getAttribute('src');
 		name = name.substring(name.indexOf('_')+1, name.lastIndexOf('.'));
-		broken = (item.parentNode.className == 'limited') ? true : false;
 		
 		if( typeof(itemsArray[name]) == 'undefined' ) {
 			itemsArray[name] = [];
@@ -388,7 +424,7 @@ link.addEventListener('click', function(evt) {
 			itemsArray[name]['notbroken'] = 0;
 		}
 		
-		if( broken ) {
+		if( item.parentNode.className == 'limited' ) {// Objet cassé
 			itemsArray[name]['broken']++;
 		}
 		else {
@@ -399,9 +435,9 @@ link.addEventListener('click', function(evt) {
 	//
 	// Génération du document XML
 	//
-	
 	var doc = document.implementation.createDocument("", "hordes", null);
-	var pi  = doc.createProcessingInstruction('xml', 'version="1.0" encoding="UTF-8"');
+	var pi  = doc.createProcessingInstruction('xml',
+		'version="1.0" encoding="' + (doc.inputEncoding || "UTF-8") + '"');
 	doc.insertBefore(pi, doc.documentElement);
 	
 	var headers = doc.createElement('headers');
@@ -409,8 +445,13 @@ link.addEventListener('click', function(evt) {
 	headers.setAttribute('generator', HMU_APPNAME);
 	doc.documentElement.appendChild(headers);
 	
+	var city = doc.createElement('city');
+	city.setAttribute('name', HMU_VARS['mapInfos']['name']);
+	city.setAttribute('days', HMU_VARS['mapInfos']['days']);
+	doc.documentElement.appendChild(city);
+	
 	var citizen = doc.createElement('citizen');
-	citizen.setAttribute('key', key);
+	citizen.setAttribute('key', HMU_VARS['key']);
 	citizen.setAttribute('login', login);
 	doc.documentElement.appendChild(citizen);
 	
@@ -429,7 +470,8 @@ link.addEventListener('click', function(evt) {
 	coords = coords.split('.');
 	zone.setAttribute('x', coords[0]);
 	zone.setAttribute('y', coords[1]);
-	zone.setAttribute('tag', caseTag);
+	zone.setAttribute('tag', caseTag);// Statut de la zone
+	zone.setAttribute('dried', dried);// Zone épuisée ou pas, ou inconnu
 	zone.setAttribute('zombie', zombiePts);
 	doc.documentElement.appendChild(zone);
 	
@@ -465,64 +507,56 @@ link.addEventListener('click', function(evt) {
 		url: postdata_url,
 		data: doc,
 		headers: {
-			'X-Handler'    : HMU_APPNAME,
-			'User-Agent'   : HMU_APPNAME + '/' + HMU_VERSION,
-			'Content-Type' : 'application/xml; charset="UTF-8"'
+			'X-Handler'  : HMU_APPNAME,
+			'User-Agent' : HMU_APPNAME + '/' + HMU_VERSION
 		},
 		onerror: function() {
 			xhr.onload = function(){};
-			loadingSection.hide();
-			resultMessage.show("Le site cible ne répond pas\u00A0!");
+			Message.show("Le site cible ne répond pas\u00A0!");
 		},
 		onload: function(responseDetails) {
 			clearTimeout(xhr.timer);
 			
 			if( responseDetails.status == 200 ) {
-				var parser = new DOMParser();
-				var code   = null;
+				var code = null;
 				
 				try {
-					var doc = parser.parseFromString(responseDetails.responseText, 'application/xml');
+					var doc = new DOMParser().parseFromString(responseDetails.responseText, 'application/xml');
 					code = doc.getElementsByTagName('error')[0].getAttribute('code');
 					
 					if( Number(doc.getElementsByTagName('headers')[0].getAttribute('version')) > HMU_VERSION ) {
-						resultMessage.show("Une nouvelle version du script est disponible en " +
+						Message.show("Une nouvelle version du script est disponible en " +
 							"<a href='" + HMU_APPHOME + "'>téléchargement</a>.<br>" +
 							"Votre version peut ne plus fonctionner correctement, " +
-							"vous devriez faire la mise à jour.", false);
+							"vous devriez faire la mise à jour.", -1);
 					}
 					else if( code == 'ok' ) {
-						resultMessage.show("La M@p a été mise à jour en " + coords.join('.') + "\u00A0!");
-						GM_setValue('zone_updated', true);
+						Message.show("La M@p a été mise à jour en " + coords.join('.') + "\u00A0!");
+						HMU_VARS['zone_updated'] = true;
 					}
 				}
-				catch(e) {
-					code = null;
-				}
+				catch(e) {}
 				
 				if( code != 'ok' ) {
-					resultMessage.show("Erreur XML renvoyée par le serveur" +
+					Message.show("Erreur XML renvoyée par le serveur" +
 						(code != null ? '\u00A0: ' + code : ''));
 				}
 			}
 			else {
-				resultMessage.show("Erreur HTTP renvoyée par le serveur\u00A0: " +
+				Message.show("Erreur HTTP renvoyée par le serveur\u00A0: " +
 					responseDetails.status + ' ' + responseDetails.statusText);
 			}
-			
-			loadingSection.hide();
 		}
 	};
 	
-	if( GM_getValue('zone_updated', false) == false ) {
+	if( HMU_VARS['zone_updated'] == false ) {
 		GM_xmlhttpRequest(xhr);
 		xhr.timer = setTimeout(xhr.onerror, (HMU_TIMEOUT * 1000));
 	}
 	else {// Aucun changement dans la zone, pas de refresh de la page, inutile de renvoyer les données
-		resultMessage.show("La M@p a été mise à jour en " + coords.join('.') + "\u00A0!");
-		loadingSection.hide();
+		Message.show("La M@p a été mise à jour en " + coords.join('.') + "\u00A0!");
 	}
 }, false);// fin du addEventListener('click'....) sur link
 
-}, 800);// fin du setInterval()
+}, 1000);// fin du setInterval()
 
