@@ -3,7 +3,7 @@
  * Copyright (c) 2008 Aurélien Maille
  * Released under the GPL license 
  * 
- * @version 0.4
+ * @version 0.5
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -28,6 +28,7 @@
 // @name           HMUpdater
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour de HordesM@p à partir de hordes.fr
+// @include        http://www.hordes.fr/#outside?sk=*
 // @include        http://www.hordes.fr/#outside
 // @include        http://www.hordes.fr/#
 // @include        http://www.hordes.fr/
@@ -43,7 +44,7 @@
 //   http://userjs.org/scripts/download/browser/enhancements/aa-gm-functions.js
 //
 
-const HMU_VERSION  = '0.4';
+const HMU_VERSION  = '0.5';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -242,7 +243,7 @@ if( document.getElementById('sites') != null ) {
 	}
 }
 
-var refresh_link = document.evaluate('a[@href="#outside/refresh"]',
+var refresh_link = document.evaluate('a[starts-with(@href, "#outside/refresh")]',
 	GENERIC_SECTION_NODE, null, XPathResult.ANY_TYPE, null);
 if( (refresh_link = refresh_link.iterateNext()) == null ) {
 	return false;
