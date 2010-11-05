@@ -36,6 +36,12 @@ const POSTDATA_URL = '';
 // pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
 const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 
+var imageList = new Array();
+imageList["help"] = "http://data.hordes.fr/gfx/loc/fr/helpLink.gif";
+imageList["map"]  = "http://data.hordes.fr/gfx/icons/r_explor.gif";
+imageList["warning"]    = "/gfx/forum/smiley/h_warning.gif";
+imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
+
 //
 // Compatibilité Opera & cie
 //
@@ -328,7 +334,7 @@ HMUpdater.initialize = function(step) {
 	updateButton.setAttribute('id',    'hmu:link');
 	updateButton.setAttribute('class', 'button');
 	updateButton.setAttribute('href',  '#outside/hmupdater');
-	updateButton.innerHTML = '<img alt="" src="http://data.hordes.fr/gfx/icons/r_explor.gif"/> <span>Mettre à jour la M@p</span>';
+	updateButton.innerHTML = '<img alt="" src="'+imageList['map']+'"/> <span>Mettre à jour la M@p</span>';
 	updateButton.lastChild.appendChild(document.createTextNode(this.coords.get() != null ? ' ('+this.coords.get()+')' : ''));
 	updateButton.addEventListener('click', function(evt) {
 		evt.preventDefault();
@@ -742,7 +748,7 @@ HMUpdater.message = {
 		var image = document.createElement('img');
 		image.setAttribute('alt', '');
 		image.setAttribute('class', 'error');
-		image.setAttribute('src', '/gfx/forum/smiley/h_warning.gif');
+		image.setAttribute('src', imageList['warning']);
 		this.html.firstChild.lastChild.insertBefore(image,
 			this.html.firstChild.lastChild.firstChild);
 	},
@@ -850,7 +856,7 @@ HMUpdater.form = {
 		HMUpdater.addStyle('#hmu\\:form .row.checkbox label * { vertical-align: middle; }');
 		HMUpdater.addStyle('#hmu\\:form .row.checkbox input { margin-top:2px; }');
 		HMUpdater.addStyle('#hmu\\:form .special { min-height:0;margin:8px 2px 10px;' +
-			'padding-left:20px;background:transparent url("http://data.hordes.fr/gfx/icons/small_move.gif") no-repeat center left; }');
+			'padding-left:20px;background:transparent url("'+imageList['small_move']+'") no-repeat center left; }');
 		HMUpdater.addStyle('#hmu\\:form a.toolAction { text-decoration:underline; }');
 		HMUpdater.addStyle('#hmu\\:form a.helpLink { position:relative;top:2px; }');
 		
@@ -863,7 +869,7 @@ HMUpdater.form = {
 '</div><div class="row checkbox">' +
 '<label><input type="checkbox" id="hmu:choice:custom"> <span>Spécifier une autre URL</span></label>' +
 '<a class="helpLink" onmouseout="js.HordeTip.hide()" onmouseover="js.HordeTip.showHelp(this,\'Vous pouvez également spécifier plusieurs URLs en les séparant avec une barre verticale (|). Les données seront alors envoyées à chaque URL.\');document.getElementById(\'tooltip\').style.zIndex = 1003;" onclick="return false;" href="#">' +
-'<img alt="Aide" src="http://data.hordes.fr/gfx/design/helpLink.gif"/></a>' +
+'<img alt="Aide" src="'+imageList['help']+'"/></a>' +
 '</div><div class="row">' +
 '<label for="hmu:login">Votre pseudo&nbsp;:</label>' +
 '<input type="text" id="hmu:login" class="field" size="35"/>' +
