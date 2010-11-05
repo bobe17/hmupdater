@@ -1,7 +1,6 @@
 <?php
 
 error_reporting(0);
-usleep(750);
 
 $url  = !empty($_GET['url']) ? trim($_GET['url']) : '';
 $data = !empty($_GET['data']) ? trim($_GET['data']) : '';
@@ -12,23 +11,22 @@ if( !preg_match('#^[a-z][a-z0-9+.-]*://[^\s<>"{}|\\^[\]`]+$#', $url) ) {
 	exit;
 }
 
-// Le Poste de Contrôle est-il la cible ?
-$targetIsPC = preg_match('#^http://hordes\.sunsky\.fr/#', $url);
-
+/*
 $content  = sprintf("url: %s\n", $url);
 $content .= sprintf("data: %s\n", $data);
 
-//$filename = 'trace/'.date('Y-m-d_H:i:s').'.data';
-//file_put_contents($filename, $content); chmod($filename, 0777);
+$filename = 'trace/'.date('Y-m-d_H:i:s').'.data';
+file_put_contents($filename, $content); chmod($filename, 0777);
+*/
 
 $version = '1.0';
-if( preg_match('/<headers[^>]+version="([0-9]+\.[0-9]+)"/', $data, $match) ) {
+if( preg_match('/<headers[^>]+version\s*=\s*("|\')([0-9]+\.[0-9]+)\\1/', $data, $match) ) {
 	$version = $match[1];
 }
 
 $charset = 'UTF-8';
-if( preg_match('/<\?xml[^>]+encoding="([^"]+)"/', $data, $match) ) {
-	$charset = $match[1];
+if( preg_match('/<\?xml[^>]+encoding\s*=\s*("|\')([^"\']+)\\1/', $data, $match) ) {
+	$charset = $match[2];
 }
 
 $headers = array();
@@ -37,10 +35,7 @@ $headers['Accept']        = 'text/xml,application/xml,text/html,text/plain,*/*';
 $headers['X-Handler']     = 'HMUpdater';
 $headers['User-Agent']    = sprintf('HMUpdater/%s via Webnaute.Hordes.Proxy/1.0', $version);
 $headers['Cache-Control'] = 'no-cache';
-
-if( $targetIsPC == false ) {
-	$headers['Content-Type']  = sprintf('application/xml; charset=%s', $charset);
-}
+$headers['Content-Type']  = sprintf('application/xml; charset=%s', $charset);
 
 $headers_txt = '';
 foreach( $headers as $name => $value ) {
@@ -51,8 +46,8 @@ unset($headers);
 $context = stream_context_create(array(
 	'http' => array(
 		'header'  => $headers_txt,
-		'method'  => ($targetIsPC == false) ? 'POST' : 'GET',
-		'content' => ($targetIsPC == false) ? $data : ''
+		'method'  => 'POST',
+		'content' => $data
 	)
 ));
 
@@ -63,14 +58,7 @@ $data = file_get_contents($url, false, $context);
 //
 $errorCode = 2;
 
-if( $targetIsPC == true ) {
-	$data = trim($data);
-	
-	if( $data == 'PC_OK' ) {
-		$errorCode = 1;
-	}
-}
-else if( $data !== false ) {
+if( $data !== false ) {
 	$doc = new DOMDocument();
 	if( $doc->loadXML($data) ) {
 		$xpath  = new DOMXPath($doc);
