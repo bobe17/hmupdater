@@ -381,12 +381,6 @@ HMUpdater.updateMap = function() {
 	
 	this.message.clear();
 	
-	if( PC.key == null || Patamap.key == null ) {
-		this.getSecretKey(PC);
-		this.getSecretKey(Patamap);
-		return false;
-	}
-	
 	//
 	// Récupération de la configuration
 	//
@@ -397,6 +391,16 @@ HMUpdater.updateMap = function() {
 	var updatePC = Boolean(GM_getArrayValue('updatePC', login, false));
 	var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
 	var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
+
+	if( updatePC == true && PC.key == null) {
+		this.getSecretKey(PC);
+		return false;
+	}
+
+	if( updatePatamap == true && Patamap.key == null ) {
+		this.getSecretKey(Patamap);
+		return false;
+	}
 	
 	if( login == '' || (updatePC == false && updatePatamap == false && updateCustom == false) ||
 		(updateCustom == true && (pubkey == '' || postdata_url == '')) )
@@ -975,7 +979,7 @@ HMUpdater.getSecretKey = function(webapp) {
 			webapp.key = RegExp.$1;
 		}
 		
-		if( PC.key != null && Patamap.key != null ) {
+		if( webapp.key != null ) {
 			HMUpdater.lock = false;
 			HMUpdater.updateMap();
 		}
