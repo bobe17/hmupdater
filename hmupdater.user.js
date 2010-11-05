@@ -986,7 +986,7 @@ HMUpdater.getSecretKey = function(webapp) {
 HMUpdater.addStyle('#hmupdater { display:none; position:fixed; right:5px; bottom:5px; z-index:1000; border:2px solid black; }');
 HMUpdater.addStyle('.hmu\\:class\\:box { border:1px solid #DDAB76; padding:5px 10px; color:inherit; background-color:#5c2b20; }');
 HMUpdater.addStyle('#hmupdater strong { display:block; width:8.5em; text-align:center; cursor:pointer; color:#f0d79e; }');
-HMUpdater.addStyle('#hmupdater strong:hover { color:#c88f60; }');
+HMUpdater.addStyle('#hmupdater strong:hover { text-shadow: 0 0 3px rgba(255,255,255,0.8); }');
 
 // Formulaire de coordonnées
 HMUpdater.addStyle('#hmu\\:coords { display:none; position:absolute; z-index:2;' +
