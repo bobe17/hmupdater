@@ -1,10 +1,11 @@
 /**
  * hmupdater.user.js
- * Copyright (c) 2008-2009 Aurélien Maille
+ * Copyright (c) 2008-2010 Aurélien Maille
  * Released under the GPL license 
  *
- * Remerciements à Pata, Ma'chi et les utilisateurs pour leurs rapports de bogue
- * et leurs nombreuses suggestions.
+ * Remerciements :
+ * Pata, Ma'chi et les utilisateurs pour leurs rapports de bogue et leurs nombreuses suggestions.
+ * Nicolas Le Cam et Pierre Gotab pour leurs patchs pour pallier à la disparition du PC
  * 
  * @version 1.2
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
@@ -24,7 +25,7 @@
 // - Ajouter une croix de fermeture en haut à droite de la boîte à message ?
 //
 
-const HMU_VERSION  = '1.2';
+const HMU_VERSION  = '1.3';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -536,7 +537,7 @@ HMUpdater.updateMap = function() {
 		}
 	}
 	
-	// Déboguage
+	// TODO temporaire
 	Debug.init();
 	Debug.dump(doc);
 	
@@ -620,6 +621,7 @@ HMUpdater.updateMap = function() {
 					);
 				}
 				
+				// TODO temporaire
 				Debug.dump(responseDetails.responseText);
 			}
 			else {
