@@ -230,15 +230,6 @@ var Debug = {
 
 const DEBUG_MODE = false;
 
-// TODO : temporaire
-if( document.location.host == 'projects.nog' ) {
-	GM_setValue('login', 'test');
-}
-
-window.wrappedJSObject.HMUpdater = HMUpdater;// TODO temporaire
-window.wrappedJSObject.PC = PC;
-window.wrappedJSObject.Patamap = Patamap;
-
 
 HMUpdater.initialize = function(step) {
 	
@@ -845,7 +836,7 @@ HMUpdater.form = {
 			
 			GM_setArrayValue('postdata_urls', login, postdata_url);
 			
-			GM_setArrayValue('updatePC', login, $('hmu:choice:pc').checked);
+//			GM_setArrayValue('updatePC', login, $('hmu:choice:pc').checked);
 			GM_setArrayValue('updatePatamap', login, $('hmu:choice:patamap').checked);
 			GM_setArrayValue('updateCustom', login, $('hmu:choice:custom').checked);
 		}
@@ -868,7 +859,7 @@ HMUpdater.form = {
 		this.html.setAttribute('id', 'hmu:form');
 		this.html.innerHTML = '<div class="hmu:class:box"><form action="#" class="form">' +
 '<div class="row checkbox">' +
-'<label><input type="checkbox" id="hmu:choice:pc"> <span>Mettre à jour ' + PC.label + '</span></label>' +
+'<!-- label><input type="checkbox" id="hmu:choice:pc"> <span>Mettre à jour ' + PC.label + '</span></label -->' +
 '<label><input type="checkbox" id="hmu:choice:patamap"> <span>Mettre à jour ' + Patamap.label + '</span></label>' +
 '</div><div class="row checkbox">' +
 '<label><input type="checkbox" id="hmu:choice:custom"> <span>Spécifier une autre URL</span></label>' +
@@ -902,7 +893,7 @@ HMUpdater.form = {
 		var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
 		var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
 		
-		$('hmu:choice:pc').checked = updatePC;
+//		$('hmu:choice:pc').checked = updatePC;
 		$('hmu:choice:patamap').checked = updatePatamap;
 		$('hmu:choice:custom').checked  = updateCustom;
 		
