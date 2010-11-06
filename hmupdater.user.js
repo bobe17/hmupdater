@@ -32,7 +32,6 @@ const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
 const DEBUG_MODE   = true;
 
 var Patamap   = { host: 'patamap.com', url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
-var PC        = { host: 'hordes.sunsky.fr', url: 'http://hordes.sunsky.fr/api/update?key=%key%', label: 'le Poste de Contrôle', id: 4, key: null };
 
 const POSTDATA_URL = '';
 // pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
@@ -418,21 +417,15 @@ HMUpdater.updateMap = function() {
 	var pubkey = GM_getArrayValue('pubkeys', login, '');
 	var postdata_url = GM_getArrayValue('postdata_urls', login, POSTDATA_URL);
 	
-	var updatePC = Boolean(GM_getArrayValue('updatePC', login, false));
 	var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
 	var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
-
-	if( updatePC == true && PC.key == null) {
-		this.getSecretKey(PC);
-		return false;
-	}
-
+	
 	if( updatePatamap == true && Patamap.key == null ) {
 		this.getSecretKey(Patamap);
 		return false;
 	}
 	
-	if( login == '' || (updatePC == false && updatePatamap == false && updateCustom == false) ||
+	if( login == '' || (updatePatamap == false && updateCustom == false) ||
 		(updateCustom == true && (pubkey == '' || postdata_url == '')) )
 	{
 		this.form.onvalidate = function() { HMUpdater.updateMap(); };
@@ -606,10 +599,7 @@ HMUpdater.updateMap = function() {
 			console.log("Request to URL '" + this.url + "'");
 			
 			var target = '<strong>';
-			if( this.host == PC.host ) {
-				target += PC.label;
-			}
-			else if( this.host == Patamap.host ) {
+			if( this.host == Patamap.host ) {
 				target += Patamap.label;
 			}
 			else {
@@ -621,11 +611,6 @@ HMUpdater.updateMap = function() {
 				var code = message = null;
 				
 				try {
-					// hack PC
-					if( responseDetails.responseText.trim().indexOf('<') == -1 ) {
-						throw 'skip';
-					}
-					
 					var doc = new DOMParser().parseFromString(responseDetails.responseText, 'application/xml');
 					var version = doc.getElementsByTagName('headers')[0].getAttribute('version');
 					var error   = doc.getElementsByTagName('error')[0];
@@ -643,9 +628,9 @@ HMUpdater.updateMap = function() {
 					}
 				}
 				catch(e) {
-					// Spécial Poste de Contrôle
-					message = responseDetails.responseText.trim();
-					code = (message == 'PC_OK') ? 'ok' : 'error';
+					message = 'Erreur inattendue';
+					console.log(e.name + ' : ' + e.message);
+					code = 'error';
 				}
 				
 				if( code == 'ok' ) {
@@ -683,11 +668,6 @@ HMUpdater.updateMap = function() {
 	// On affichage l'image de chargement
 	$('loading_section').style.display = 'block';
 	document.body.style.cursor = 'progress';
-	
-	if( updatePC == true ) {
-		this.counter++;
-		GM_xmlhttpRequest(new ixhr(PC.url.replace('%key%', PC.key), null));
-	}
 	
 	if( updatePatamap == true ) {
 		this.counter++;
@@ -876,8 +856,6 @@ HMUpdater.form = {
 			// end hack
 			
 			GM_setArrayValue('postdata_urls', login, postdata_url);
-			
-//			GM_setArrayValue('updatePC', login, $('hmu:choice:pc').checked);
 			GM_setArrayValue('updatePatamap', login, $('hmu:choice:patamap').checked);
 			GM_setArrayValue('updateCustom', login, $('hmu:choice:custom').checked);
 		}
@@ -900,7 +878,6 @@ HMUpdater.form = {
 		this.html.setAttribute('id', 'hmu:form');
 		this.html.innerHTML = '<div class="hmu:class:box"><form action="#" class="form">' +
 '<div class="row checkbox">' +
-'<!-- label><input type="checkbox" id="hmu:choice:pc"> <span>Mettre à jour ' + PC.label + '</span></label -->' +
 '<label><input type="checkbox" id="hmu:choice:patamap"> <span>Mettre à jour ' + Patamap.label + '</span></label>' +
 '</div><div class="row checkbox">' +
 '<label><input type="checkbox" id="hmu:choice:custom"> <span>Spécifier une autre URL</span></label>' +
@@ -930,11 +907,9 @@ HMUpdater.form = {
 		var pubkey = GM_getArrayValue('pubkeys', login, '');
 		var url    = GM_getArrayValue('postdata_urls', login, '');
 		
-		var updatePC = Boolean(GM_getArrayValue('updatePC', login, false));
 		var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
 		var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
 		
-//		$('hmu:choice:pc').checked = updatePC;
 		$('hmu:choice:patamap').checked = updatePatamap;
 		$('hmu:choice:custom').checked  = updateCustom;
 		
@@ -1011,7 +986,7 @@ HMUpdater.getSecretKey = function(webapp) {
 			webapp.key = RegExp.$1;
 		}
 		
-		if( webapp.key != null ) {
+		if( webapp.key != null ) {// TODO : erroné. Tous les webapp à contacter doivent avoir key != null
 			HMUpdater.lock = false;
 			HMUpdater.updateMap();
 		}
