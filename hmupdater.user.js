@@ -7,7 +7,7 @@
  * Pata, Ma'chi et les utilisateurs pour leurs rapports de bogue et leurs nombreuses suggestions.
  * Nicolas Le Cam et Pierre Gotab pour leurs patchs pour pallier à la disparition du PC
  * 
- * @version 1.2
+ * @version 1.3
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -29,6 +29,7 @@ const HMU_VERSION  = '1.3';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
+const DEBUG_MODE   = true;
 
 var Patamap   = { host: 'patamap.com', url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
 var PC        = { host: 'hordes.sunsky.fr', url: 'http://hordes.sunsky.fr/api/update?key=%key%', label: 'le Poste de Contrôle', id: 4, key: null };
@@ -47,6 +48,7 @@ imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
 // Compatibilité Opera & cie
 //
 if( typeof(GM_getValue) == 'undefined' ) {
+	console.log('We use non-native GM_*Value()');
 	function GM_getValue(name, defaultVal)
 	{
 		try {
@@ -70,9 +72,15 @@ if( typeof(GM_getValue) == 'undefined' ) {
 	}
 }
 
+//console.log(GM_setValue);
+
 if( typeof(GM_xmlhttpRequest) == 'undefined' ) {
+	console.log('We use non-native GM_xmlhttpRequest()');
+	
 	function GM_xmlhttpRequest(xhr)
 	{
+		console.log('Call to non-native GM_xmlhttpRequest()');
+		
 		var data = (xhr.data != null) ?
 			new XMLSerializer().serializeToString(xhr.data) : '';
 		
@@ -153,6 +161,12 @@ function $xpath(expression, contextNode, type)
 		.evaluate(expression, contextNode, null, type, null);
 }
 
+if( !DEBUG_MODE ) {
+	console = {
+		log: function(t) {}
+	};
+}
+
 var HMUpdater = {
 	mainNode: null,
 	styleSheet: null,
@@ -165,76 +179,12 @@ var HMUpdater = {
 	}
 };
 
-//////////////////////
-//    TEMPORAIRE    //
-//////////////////////
-var Debug = {
-	html: null,
-	init: function() {
-		if( DEBUG_MODE == false ) {
-			return;
-		}
-		
-		if( this.html == null ) {
-			this.create();
-		}
-		
-		this.html.style.display = 'block';
-		this.html.lastChild.innerHTML = '';
-	},
-	dump: function(data) {
-		if( this.html == null ) {
-			return;
-		}
-		
-		var dump = document.createElement('div');
-		
-		if( typeof(data) != 'string' ) {
-			data = new XMLSerializer().serializeToString(data).split('><').join('>\r\n<');
-		}
-		
-		dump.appendChild(document.createTextNode(data));
-		this.html.lastChild.appendChild(dump);
-	},
-	create: function() {
-		HMUpdater.addStyle('div#hmu\\:debug { position: fixed; z-index: 100; top: 20px;' +
-			'right: 20px; width:320px; overflow: auto; background-color: white; color: black;' +
-			'font: 12px "Bitstream Vera Sans"; border: 1px solid silver; padding: 5px 8px; }');
-		HMUpdater.addStyle('div#hmu\\:debug div:not(:first-child) { white-space: pre; margin-top: 5px;' +
-			'border-top: 1px solid silver; padding-top: 5px; }');
-		HMUpdater.addStyle('div#hmu\\:debug a:link, div#debug-box a:visited { text-decoration: underline; color: #228; }');
-		HMUpdater.addStyle('div#hmu\\:debug a:hover { text-decoration: underline; color: maroon; }');
-		HMUpdater.addStyle('div#hmu\\:debug div + div { margin-top: 5px; padding-top: 5px; border-top: 1px solid silver; }');
-		
-		this.html = document.createElement('div');
-		this.html.setAttribute('id', 'hmu:debug');
-		this.html.innerHTML = '<div><a href="#toggle">toggle</a> - <a href="#close">close</a></div><div></div>';
-		
-		// Lien toggle
-		this.html.firstChild.firstChild.addEventListener('click', function(evt) {
-			var node = this.parentNode.parentNode.lastChild;
-			var display = display = window.getComputedStyle(node, null).display;
-			node.style.display = display == 'none' ? 'block' : 'none';
-			
-			evt.preventDefault();
-		}, false);
-		
-		// Lien close
-		this.html.firstChild.lastChild.addEventListener('click', function(evt) {
-			this.parentNode.parentNode.style.display = 'none';
-			evt.preventDefault();
-		}, false);
-		
-		document.body.appendChild(this.html);
-	}
-};
-
-const DEBUG_MODE = false;
-
-
 HMUpdater.initialize = function(step) {
+	console.log('Call to HMUpdater.initialize() (step = ' + String(step) + ')');
 	
 	if( document.location.hash.indexOf('#outside') == -1 ) {
+		console.warn('#gameLayout.outside not found !');
+		
 		this.form.hide();
 		this.message.clear();
 		this.coords.set(null);
@@ -258,6 +208,7 @@ HMUpdater.initialize = function(step) {
 	this.mainNode = $('generic_section');
 	
 	if( this.mainNode == null || $('hmu:link') != null ) {
+		console.warn('mainNode not found or hmu:link already exists !');
 		return false;
 	}
 	
@@ -279,6 +230,8 @@ HMUpdater.initialize = function(step) {
 		XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue;
 	
 	if( actionPanel == null || viewPanel == null ) {
+		console.warn('actionPanel or viewPanel not found !');
+		
 		if( step == 1 ) {
 			// WorkAround : Parfois, le panneau d'actions n'existe pas encore à ce moment.
 			// On lance donc un timer pour faire le boulot X millièmes de seconde plus tard
@@ -362,11 +315,11 @@ HMUpdater.initialize = function(step) {
 			}
 		}
 	}
-	
-//	GM_log("HMUpdater initialized" + (step == 3 ? " by AJAX request" : (step == 2 ? " by timer" : "")));
 };
 
 HMUpdater.updateMap = function() {
+	console.log('Call to HMUpdater.updateMap()');
+	
 	if( this.lock == true ) {
 		return false;
 	}
@@ -414,6 +367,7 @@ HMUpdater.updateMap = function() {
 	//
 	// Récupération des données
 	//
+	console.log('Fetching data from HTML page');
 	
 	// Un bâtiment dans la zone ?
 	var buildingName = '';
@@ -466,6 +420,8 @@ HMUpdater.updateMap = function() {
 	//
 	// Génération du document XML
 	//
+	console.log('Generating XML document');
+	
 	var doc = document.implementation.createDocument("", "hordes", null);
 	
 	if( doc.inputEncoding != null ) {
@@ -537,9 +493,7 @@ HMUpdater.updateMap = function() {
 		}
 	}
 	
-	// TODO temporaire
-	Debug.init();
-	Debug.dump(doc);
+	console.log(doc);
 	
 	function ixhr(url, doc)
 	{
@@ -564,6 +518,7 @@ HMUpdater.updateMap = function() {
 		
 		this.onload  = function(responseDetails) {
 			clearTimeout(this.timer);
+			console.log("Request to URL '" + this.url + "'");
 			
 			var target = '<strong>';
 			if( this.host == PC.host ) {
@@ -621,8 +576,7 @@ HMUpdater.updateMap = function() {
 					);
 				}
 				
-				// TODO temporaire
-				Debug.dump(responseDetails.responseText);
+				console.log('Response : ' + responseDetails.responseText);
 			}
 			else {
 				HMUpdater.message.error("Erreur HTTP renvoyée par " + target +
