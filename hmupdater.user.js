@@ -52,7 +52,7 @@ if( typeof(GM_getValue) == 'undefined' ) {
 	{
 		try {
 			return (new RegExp('hmu_' + name + "=([^\\s;]+)", "g"))
-				.test(document.cookie) ? unescape(RegExp.$1) : defaultVal;
+				.test(document.cookie) ? decodeURIComponent(RegExp.$1) : defaultVal;
 		}
 		catch(e) {
 			return defaultVal;
@@ -65,7 +65,7 @@ if( typeof(GM_getValue) == 'undefined' ) {
 		expire.setTime(expire.getTime() + (365*24*60*60*1000));
 		
 		document.cookie =
-			'hmu_' + name + '=' + escape(val) + ';' +
+			'hmu_' + name + '=' + encodeURIComponent(val) + ';' +
 			'expires=' + expire.toGMTString() + ';' +
 			'path=/';
 	}
@@ -93,7 +93,11 @@ if( typeof(GM_xmlhttpRequest) == 'undefined' ) {
 			});
 		}, false);
 		img.addEventListener('error', function() { xhr.onerror(); }, false);
-		img.setAttribute('src', PROXY_URL+'?url='+escape(xhr.url)+'&data='+escape(data)+'&rand='+Math.random());
+		img.setAttribute('src', PROXY_URL + '?' +
+			'url='+encodeURIComponent(xhr.url) + '&' +
+			'data='+encodeURIComponent(data) + '&' +
+			'rand='+Math.random()
+		);
 	}
 }
 
