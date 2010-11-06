@@ -221,19 +221,18 @@ HMUpdater.initialize = function() {
 			var url = this.urlForBack;
 			this._hmu_onData(data);
 			
-			var evt = document.createEvent('Events');
-			evt.initEvent('HMUActionPerformed', false, false);
-			
-			var data = document.getElementById('hmu-data');
-			if( data == null ) {
-				data = document.createElement('div');
-				data.setAttribute('id', 'hmu-data');
-				data.style.display = 'none';
-				document.body.appendChild(data);
+			var node = document.getElementById('hmu-data');
+			if( node == null ) {
+				node = document.createElement('div');
+				node.setAttribute('id', 'hmu-data');
+				node.style.display = 'none';
+				document.body.appendChild(node);
 			}
-			data.innerHTML = url;
+			node.innerHTML = url;
 			
 			// TODO déclencher l'évènement seulement si url commence par outside/ ?
+			var evt = document.createEvent('Events');
+			evt.initEvent('HMUActionPerformed', false, false);
 			document.dispatchEvent(evt);
 		};
 	};
