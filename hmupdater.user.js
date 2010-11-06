@@ -7,7 +7,6 @@
  * Pata, Ma'chi et les utilisateurs pour leurs rapports de bogue et leurs nombreuses suggestions.
  * Nicolas Le Cam et Pierre Gotab pour leurs patchs pour pallier à la disparition du PC
  * 
- * @version 1.3
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -18,6 +17,7 @@
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour d'une M@p d'objets à partir de hordes.fr
 // @include        http://www.hordes.fr/*
+// @version        1.3
 // ==/UserScript==
 // 
 // @todo
