@@ -179,8 +179,68 @@ var HMUpdater = {
 	}
 };
 
-HMUpdater.initialize = function(step) {
-	console.log('Call to HMUpdater.initialize() (step = ' + String(step) + ')');
+HMUpdater.initialize = function() {
+	console.log('Call to HMUpdater.initialize()');
+	
+	//
+	// Bouton "HMUpdater"
+	//
+	HMUpdater.addStyle('#hmupdater { display:none; position:fixed; right:5px; bottom:5px; z-index:1000; border:2px solid black; }');
+	HMUpdater.addStyle('.hmu\\:class\\:box { border:1px solid #DDAB76; padding:5px 10px; color:inherit; background-color:#5c2b20; }');
+	HMUpdater.addStyle('#hmupdater strong { display:block; width:8.5em; text-align:center; cursor:pointer; color:#f0d79e; }');
+	HMUpdater.addStyle('#hmupdater strong:hover { text-shadow: 0 0 3px rgba(255,255,255,0.8); }');
+	
+	// Formulaire de coordonnées
+	HMUpdater.addStyle('#hmu\\:coords { display:none; position:absolute; z-index:2;' +
+		'width:260px; margin-top:-40px; margin-left:5px; padding:4px; font-size:8pt;' +
+		'background-color:#3B3249; border:1px solid #AFACC1; outline:2px solid black; }');
+	HMUpdater.addStyle('#hmu\\:coords p { background-color:#696486; margin-bottom:0; padding:0 3px; text-align:left; }');
+	HMUpdater.addStyle('#hmu\\:coords .field { display:block; margin:15px auto; }');
+	HMUpdater.addStyle('#hmu\\:coords .button { width:125px;float:left;text-align:center; }');
+	HMUpdater.addStyle('#hmu\\:coords .button + .button { float:right; }');
+	
+	// Bouton de mise à jour
+	HMUpdater.addStyle('#hmu\\:link * { vertical-align:middle; }');
+	
+	var root = document.createElement('div');
+	root.setAttribute('id', 'hmupdater');
+	root.setAttribute('title', 'Cliquez pour configurer le script');
+	root.innerHTML = '<strong class="hmu:class:box">HMUpdater</strong>';
+	root.firstChild.addEventListener('click', function() {
+		HMUpdater.form.toggle();
+	}, false);
+	document.body.appendChild(root);
+	
+	HMUpdater.refresh(1);
+	
+	//
+	// On s'intercalle devant la méthode js.XmlHttp.onData() pour mettre à jour
+	// les coordonnées à chaque changement de case
+	//
+	window.wrappedJSObject.js.XmlHttp._hmu_onData = window.wrappedJSObject.js.XmlHttp.onData;
+	window.wrappedJSObject.js.XmlHttp.onData = function(data) {
+		var url = this.urlForBack;
+		
+		if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
+			
+			if( HMUpdater.coords.get() != null ) {
+				
+				var coords = HMUpdater.coords.get().split('.');
+				coords[0] = parseInt(coords[0]) + parseInt(RegExp.$1);
+				coords[1] = parseInt(coords[1]) + parseInt(RegExp.$2);
+				HMUpdater.coords.set(coords.join('.'));
+			}
+			
+			HMUpdater.vars['dried'] = -1;
+		}
+		
+		this._hmu_onData(data);
+		HMUpdater.refresh(3);
+	};
+};
+
+HMUpdater.refresh = function(step) {
+	console.log('Call to HMUpdater.refresh() (step = ' + String(step) + ')');
 	
 	if( document.location.hash.indexOf('#outside') == -1 ) {
 		console.warn('#gameLayout.outside not found !');
@@ -236,7 +296,7 @@ HMUpdater.initialize = function(step) {
 			// WorkAround : Parfois, le panneau d'actions n'existe pas encore à ce moment.
 			// On lance donc un timer pour faire le boulot X millièmes de seconde plus tard
 			var timer = setInterval(function() {
-				HMUpdater.initialize(2);
+				HMUpdater.refresh(2);
 				if( $('hmu:link') != null ) {
 					clearInterval(timer);
 				}
@@ -901,7 +961,7 @@ HMUpdater.addStyle = function(rule) {
 	try {
 		return this.styleSheet.insertRule(rule, this.styleSheet.cssRules.length);
 	}
-	catch(e) { return -1; }
+	catch(e) { console.error('Failed to insert CSS rule'); }
 };
 
 HMUpdater.checkVersion = function(version) {
@@ -935,65 +995,7 @@ HMUpdater.getSecretKey = function(webapp) {
 };
 
 //
-// Bouton "HMUpdater"
-//
-HMUpdater.addStyle('#hmupdater { display:none; position:fixed; right:5px; bottom:5px; z-index:1000; border:2px solid black; }');
-HMUpdater.addStyle('.hmu\\:class\\:box { border:1px solid #DDAB76; padding:5px 10px; color:inherit; background-color:#5c2b20; }');
-HMUpdater.addStyle('#hmupdater strong { display:block; width:8.5em; text-align:center; cursor:pointer; color:#f0d79e; }');
-HMUpdater.addStyle('#hmupdater strong:hover { text-shadow: 0 0 3px rgba(255,255,255,0.8); }');
-
-// Formulaire de coordonnées
-HMUpdater.addStyle('#hmu\\:coords { display:none; position:absolute; z-index:2;' +
-	'width:260px; margin-top:-40px; margin-left:5px; padding:4px; font-size:8pt;' +
-	'background-color:#3B3249; border:1px solid #AFACC1; outline:2px solid black; }');
-HMUpdater.addStyle('#hmu\\:coords p { background-color:#696486; margin-bottom:0; padding:0 3px; text-align:left; }');
-HMUpdater.addStyle('#hmu\\:coords .field { display:block; margin:15px auto; }');
-HMUpdater.addStyle('#hmu\\:coords .button { width:125px;float:left;text-align:center; }');
-HMUpdater.addStyle('#hmu\\:coords .button + .button { float:right; }');
-
-// Bouton de mise à jour
-HMUpdater.addStyle('#hmu\\:link * { vertical-align:middle; }');
-
-var root = document.createElement('div');
-root.setAttribute('id', 'hmupdater');
-root.setAttribute('title', 'Cliquez pour configurer le script');
-root.innerHTML = '<strong class="hmu:class:box">HMUpdater</strong>';
-root.firstChild.addEventListener('click', function() {
-	HMUpdater.form.toggle();
-}, false);
-document.body.appendChild(root);
-
-//
 // Initialisation du script
 //
-if( typeof(window.wrappedJSObject.js) != 'undefined' ) {
-	//
-	// On s'intercalle devant la méthode js.XmlHttp.onData() pour mettre à jour
-	// les coordonnées à chaque changement de case
-	//
-	window.wrappedJSObject.js.XmlHttp._hmu_onData = window.wrappedJSObject.js.XmlHttp.onData;
-	window.wrappedJSObject.js.XmlHttp.onData = function(data) {
-		var url = this.urlForBack;
-		
-		if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
-			
-			if( HMUpdater.coords.get() != null ) {
-				
-				var coords = HMUpdater.coords.get().split('.');
-				coords[0] = parseInt(coords[0]) + parseInt(RegExp.$1);
-				coords[1] = parseInt(coords[1]) + parseInt(RegExp.$2);
-				HMUpdater.coords.set(coords.join('.'));
-			}
-			
-			HMUpdater.vars['dried'] = -1;
-		}
-		
-		this._hmu_onData(data);
-		HMUpdater.initialize(3);
-	};
-	
-	HMUpdater.initialize(1);
-}
-
-
+HMUpdater.initialize();
 
