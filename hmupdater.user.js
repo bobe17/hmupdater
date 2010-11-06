@@ -159,7 +159,10 @@ function $xpath(expression, contextNode, type)
 
 if( !DEBUG_MODE ) {
 	console = {
-		log: function(t) {}
+		log: function(t) {},
+		info: function(t) {},
+		warn: function(t) {},
+		error: function(t) {}
 	};
 }
 
