@@ -195,7 +195,7 @@ HMUpdater.initialize = function(step) {
 		//
 		if( $('hordes_login') != null ) {
 			$('hordes_login').addEventListener('submit', function() {
-				GM_setValue('login', this.elements['login'].value.trim());
+				GM_setValue('login', this.elements.namedItem('login').value.trim());
 			}, false);
 		}
 		
