@@ -241,7 +241,7 @@ HMUpdater.initialize = function() {
 		};
 	};
 	
-	location.assign("javascript:var init = " + init.toString().replace(/\n[ \t]*\/\/[^\n]+/, '').replace("\n","") + ";init();");
+	location.assign("javascript:var init = " + init.toString().replace(/\n[ \t]*\/\/[^\n]+/g, '').replace(/\n/g,"") + ";init();");
 	
 	document.addEventListener('HMUActionPerformed', function(evt) {
 		
