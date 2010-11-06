@@ -98,10 +98,6 @@ if( typeof(GM_xmlhttpRequest) == 'undefined' ) {
 	}
 }
 
-if( typeof(window.wrappedJSObject) == 'undefined' ) {
-	window.wrappedJSObject = window;
-}
-
 if( typeof("".trim) == 'undefined' ) {
 	String.prototype.trim = function() {
 		return this.replace(/^\s+|\s+$/g, '');
@@ -214,12 +210,39 @@ HMUpdater.initialize = function() {
 	HMUpdater.refresh(1);
 	
 	//
-	// On s'intercalle devant la méthode js.XmlHttp.onData() pour mettre à jour
-	// les coordonnées à chaque changement de case
+	// On s'intercalle devant la méthode js.XmlHttp.onData() pour détecter les
+	// changements de zone et mettre à jour les coordonnées
 	//
-	window.wrappedJSObject.js.XmlHttp._hmu_onData = window.wrappedJSObject.js.XmlHttp.onData;
-	window.wrappedJSObject.js.XmlHttp.onData = function(data) {
-		var url = this.urlForBack;
+	var init = function() {
+		js.XmlHttp._hmu_onData = js.XmlHttp.onData;
+		js.XmlHttp.onData = function(data) {
+			var url = this.urlForBack;
+			this._hmu_onData(data);
+			
+			var evt = document.createEvent('Events');
+			evt.initEvent('HMUActionPerformed', false, false);
+			
+			var data = document.getElementById('hmu-data');
+			if( data == null ) {
+				data = document.createElement('div');
+				data.setAttribute('id', 'hmu-data');
+				data.style.display = 'none';
+				document.body.appendChild(data);
+			}
+			data.innerHTML = url;
+			
+			// TODO déclencher l'évènement seulement si url commence par outside/ ?
+			document.dispatchEvent(evt);
+		};
+	};
+	
+	location.assign("javascript:var init = " + init.toString().replace(/\n[ \t]*\/\/[^\n]+/, '').replace("\n","") + ";init();");
+	
+	document.addEventListener('HMUActionPerformed', function(evt) {
+		
+		var url = $('hmu-data').textContent;
+		
+		console.log('HMUActionPerformed event dispatched. url = ' + url);
 		
 		if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
 			
@@ -234,9 +257,8 @@ HMUpdater.initialize = function() {
 			HMUpdater.vars['dried'] = -1;
 		}
 		
-		this._hmu_onData(data);
 		HMUpdater.refresh(3);
-	};
+	}, false);
 };
 
 HMUpdater.refresh = function(step) {
