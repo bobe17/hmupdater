@@ -31,8 +31,8 @@ const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
 const DEBUG_MODE   = true;
 
-// TODO : hack dégueu / temporaire
-const IS_GECKO     = (typeof(window.wrappedJSObject) != 'undefined') ? true : false;
+// TODO : faute de mieux...
+const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome);
 
 var Patamap   = { host: 'patamap.com', url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
 
@@ -49,11 +49,10 @@ imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
 //
 // Compatibilité non-Gecko
 //
-if( !IS_GECKO ) {
+if( !GM_AVAILABLE ) {
 	console.log('We use non-native GM_*Value()');
 	
-	function GM_getValue(name, defaultVal)
-	{
+	GM_getValue = function(name, defaultVal) {
 		try {
 			return (new RegExp('hmu_' + name + "=([^\\s;]+)", "g"))
 				.test(document.cookie) ? decodeURIComponent(RegExp.$1) : defaultVal;
@@ -61,10 +60,9 @@ if( !IS_GECKO ) {
 		catch(e) {
 			return defaultVal;
 		}
-	}
+	};
 	
-	function GM_setValue(name, val)
-	{
+	GM_setValue = function(name, val) {
 		var expire = new Date();
 		expire.setTime(expire.getTime() + (365*24*60*60*1000));
 		
@@ -72,14 +70,13 @@ if( !IS_GECKO ) {
 			'hmu_' + name + '=' + encodeURIComponent(val) + ';' +
 			'expires=' + expire.toGMTString() + ';' +
 			'path=/';
-	}
+	};
 }
 
-if( !IS_GECKO ) {
+if( !GM_AVAILABLE ) {
 	console.log('We use non-native GM_xmlhttpRequest()');
 	
-	function GM_xmlhttpRequest(xhr)
-	{
+	GM_xmlhttpRequest = function(xhr) {
 		console.log('Call to non-native GM_xmlhttpRequest()');
 		
 		var data = (xhr.data != null) ?
@@ -100,7 +97,7 @@ if( !IS_GECKO ) {
 			'data='+encodeURIComponent(data) + '&' +
 			'rand='+Math.random()
 		);
-	}
+	};
 }
 
 if( typeof("".trim) == 'undefined' ) {
@@ -271,9 +268,8 @@ HMUpdater.initialize = function() {
 HMUpdater.refresh = function(step) {
 	console.log('Call to HMUpdater.refresh() (step = ' + String(step) + ')');
 	
-	// TODO : bug, #gameLayout.outside utilisé aussi dans la section aide du jeu
-	if( $('gameLayout') == null || $('gameLayout').className != 'outside' ) {
-		console.warn('#gameLayout.outside not found !');
+	if( $('swfmap') == null ) {
+		console.warn('#swfmap not found !');
 		
 		this.form.hide();
 		this.message.clear();
