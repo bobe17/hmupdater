@@ -31,6 +31,9 @@ const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
 const DEBUG_MODE   = true;
 
+// TODO : hack dégueu / temporaire
+const IS_GECKO     = (typeof(window.wrappedJSObject) != 'undefined') ? true : false;
+
 var Patamap   = { host: 'patamap.com', url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
 
 const POSTDATA_URL = '';
@@ -44,10 +47,11 @@ imageList["warning"]    = "/gfx/forum/smiley/h_warning.gif";
 imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
 
 //
-// Compatibilité Opera & cie
+// Compatibilité non-Gecko
 //
-if( typeof(GM_getValue) == 'undefined' ) {
+if( !IS_GECKO ) {
 	console.log('We use non-native GM_*Value()');
+	
 	function GM_getValue(name, defaultVal)
 	{
 		try {
@@ -71,9 +75,7 @@ if( typeof(GM_getValue) == 'undefined' ) {
 	}
 }
 
-//console.log(GM_setValue);
-
-if( typeof(GM_xmlhttpRequest) == 'undefined' ) {
+if( !IS_GECKO ) {
 	console.log('We use non-native GM_xmlhttpRequest()');
 	
 	function GM_xmlhttpRequest(xhr)
