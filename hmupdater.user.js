@@ -318,9 +318,9 @@ HMUpdater.refresh = function(step) {
 	//
 	// Ajout du bouton de mise à jour et du formulaire pour les coordonnées
 	//
-	var actionPanel = $xpath('div[@class="left"]', this.mainNode,
+	var actionPanel = $xpath('./div[@class="left"]', this.mainNode,
 		XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue;
-	var viewPanel   = $xpath('div[@class="right"]', this.mainNode,
+	var viewPanel   = $xpath('./div[@class="right"]', this.mainNode,
 		XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue;
 	
 	if( actionPanel == null || viewPanel == null ) {
@@ -459,17 +459,17 @@ HMUpdater.updateMap = function() {
 	
 	// Un bâtiment dans la zone ?
 	var buildingName = '';
-	var ruine = $xpath('count(div[@class="outSpot"]//img[@alt="x"])',
+	var ruine = $xpath('count(./div[@class="outSpot"]//img[@alt="x"])',
 		this.mainNode, XPathResult.NUMBER_TYPE).numberValue;
 	
 	if( ruine == 0 ) {
-		buildingName = $xpath('div[@class="outSpot"]/h2',
+		buildingName = $xpath('./div[@class="outSpot"]/h2',
 			this.mainNode, XPathResult.STRING_TYPE).stringValue;
 	}
 	
 	// Récupération du statut de la case
 	var caseTag = -1;
-	var selectBox = $xpath('div[@class="right"]//select[@name="tid"]',
+	var selectBox = $xpath('./div[@class="right"]//select[@name="tid"]',
 		this.mainNode, XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue;
 	if( selectBox != null ) {
 		caseTag = parseInt(selectBox.value);
@@ -482,7 +482,7 @@ HMUpdater.updateMap = function() {
 	}
 	
 	// Listing des objets présents par terre
-	var items = $xpath('div[@class="right"]/ul[@class="tools shortTools outInv"]//img[@alt="item"]',
+	var items = $xpath('./div[@class="right"]/ul[@class="tools shortTools outInv"]//img[@alt="item"]',
 		this.mainNode, XPathResult.ANY_TYPE);
 	var item = null, name = null;
 	var itemsArray = [];
