@@ -294,8 +294,13 @@ HMUpdater.refresh = function(step) {
 	
 	this.mainNode = $('generic_section');
 	
-	if( this.mainNode == null || $('hmu:link') != null ) {
-		console.warn('mainNode not found or hmu:link already exists !');
+	if( this.mainNode == null ) {
+		console.warn('mainNode not found !');
+		return false;
+	}
+	
+	if( $('hmu:link') != null ) {
+		console.warn('hmu:link already exists !');
 		return false;
 	}
 	
@@ -772,7 +777,11 @@ HMUpdater.message = {
 			this.html.firstChild.lastChild.firstChild);
 	},
 	hide: function() {
-		this.timer = setInterval(function() {HMUpdater.message.reduceOpacity();}, 60);
+		this.html.style.opacity = 0;
+		// Crade mais les transitions events, c'est pas encore d'actualité...
+		setTimeout(function(){
+			HMUpdater.message.clear();
+		}, 1600);
 	},
 	clear: function() {
 		if( this.html != null ) {
@@ -781,19 +790,9 @@ HMUpdater.message = {
 			this.html.firstChild.innerHTML = '';
 		}
 	},
-	reduceOpacity: function() {
-		var opacity = parseFloat(this.html.style.opacity);
-		opacity = (Math.round((opacity - 0.1) * 10) / 10);
-		
-		this.html.style.opacity = opacity;
-		
-		if( opacity <= 0 ) {
-			clearInterval(this.timer);
-			this.clear();
-		}
-	},
 	create: function() {
-		HMUpdater.addStyle('#hmu\\:message { display:none; position:fixed; bottom:3.4em; right:2.4em;' +
+		HMUpdater.addStyle('#hmu\\:message { transition: opacity 1.4s; -o-transition: opacity 1.4s; -moz-transition: opacity 1.4s; -webkit-transition: opacity 1.4s;' +
+			'display:none; position:fixed; bottom:3.4em; right:2.4em;' +
 			'z-index:1001; min-width:250px; max-width:500px; text-align:left;' +
 			'border-radius:8px; -moz-border-radius:8px; font-family:"Bitstream Vera Sans",Verdana,sans-serif;}');
 		HMUpdater.addStyle('#hmu\\:message img.error { vertical-align:bottom; margin-right:3px; margin-bottom:-1px; }');
