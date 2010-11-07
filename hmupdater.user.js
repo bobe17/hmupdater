@@ -271,7 +271,8 @@ HMUpdater.initialize = function() {
 HMUpdater.refresh = function(step) {
 	console.log('Call to HMUpdater.refresh() (step = ' + String(step) + ')');
 	
-	if( document.location.hash.indexOf('#outside') == -1 ) {
+	// TODO : bug, #gameLayout.outside utilisé aussi dans la section aide du jeu
+	if( $('gameLayout') == null || $('gameLayout').className != 'outside' ) {
 		console.warn('#gameLayout.outside not found !');
 		
 		this.form.hide();
