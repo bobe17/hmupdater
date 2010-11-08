@@ -1,4 +1,15 @@
-<!-- DTD pour le flux XML envoyé par HMUpdater -->
+<!--
+	$Id$
+	Copyright (c) 2008-2010 Aurélien Maille
+	Released under the GPL license
+	
+	DTD pour le flux XML envoyé par HMUpdater.
+	
+	@author  Aurélien Maille <bobe+hordes@webnaute.net>
+	@link    http://dev.webnaute.net/Applications/HMUpdater/
+	@license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
+	@charset UTF-8
+-->
 
 <!ELEMENT hordes (headers,city,citizen,zone,items)>
 <!ELEMENT headers EMPTY>

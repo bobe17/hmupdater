@@ -1,5 +1,5 @@
 /**
- * hmupdater.user.js
+ * $Id$
  * Copyright (c) 2008-2010 Aurélien Maille
  * Released under the GPL license 
  *

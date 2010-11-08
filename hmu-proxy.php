@@ -1,4 +1,17 @@
 <?php
+/**
+ * $Id$
+ * Copyright (c) 2008-2010 Aurélien Maille
+ * Released under the GPL license
+ * 
+ * Pseudo-proxy pour HMUpdater, pour les navigateurs qui ne permettent pas
+ * les appels cross-domain avec GM_xmlhttpRequest()
+ * 
+ * @author  Aurélien Maille <bobe+hordes@webnaute.net>
+ * @link    http://dev.webnaute.net/Applications/HMUpdater/
+ * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
+ * @charset UTF-8
+ */
 
 error_reporting(0);
 
