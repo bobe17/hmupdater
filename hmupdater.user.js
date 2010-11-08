@@ -348,7 +348,7 @@ HMUpdater.refresh = function(step) {
 		'<input type="reset" value="Annuler" class="button"/>';
 	coordsForm.addEventListener('submit', function(evt) {
 		evt.preventDefault();
-		var coords = this.elements['coords'].value.trim();
+		var coords = this.elements.namedItem('coords').value.trim();
 		
 		if( /^[0-9]{1,2}(\.|,)[0-9]{1,2}$/.test(coords) ) {
 			this.style.display = 'none';
