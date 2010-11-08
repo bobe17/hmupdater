@@ -43,8 +43,9 @@ const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 var imageList = new Array();
 imageList["help"] = "http://data.hordes.fr/gfx/loc/fr/helpLink.gif";
 imageList["map"]  = "http://data.hordes.fr/gfx/icons/r_explor.gif";
-imageList["warning"]    = "/gfx/forum/smiley/h_warning.gif";
+imageList["warning"]    = "http://www.hordes.fr/gfx/forum/smiley/h_warning.gif";
 imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
+imageList["anchor"]     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAQAgMAAACXY5xCAAAAAXNSR0IArs4c6QAAAAlQTFRFHQgQXCsg3at2dnylcgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAABLSURBVAjXLcqxDcAgDETRjxRlB7ZhiSClN8yThn3DnXHh+8VjPT4Y3t6ojhduR0Ax+ki0CUabJAqFkIiQiZCJUGSUlQRmO1HPcun9kAcXQ2R1ivMAAAAASUVORK5CYII=";
 
 //
 // Compatibilité non-Gecko
@@ -807,7 +808,7 @@ HMUpdater.message = {
 		var image = document.createElement('img');
 		image.setAttribute('alt', '');
 		image.setAttribute('class', 'pointer');
-		image.setAttribute('src', 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAQAgMAAACXY5xCAAAAAXNSR0IArs4c6QAAAAlQTFRFHQgQXCsg3at2dnylcgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAABLSURBVAjXLcqxDcAgDETRjxRlB7ZhiSClN8yThn3DnXHh+8VjPT4Y3t6ojhduR0Ax+ki0CUabJAqFkIiQiZCJUGSUlQRmO1HPcun9kAcXQ2R1ivMAAAAASUVORK5CYII=');
+		image.setAttribute('src', imageList['anchor']);
 		this.html.appendChild(image);
 		
 		document.body.appendChild(this.html);
