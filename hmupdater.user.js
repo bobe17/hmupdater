@@ -34,18 +34,31 @@ const DEBUG_MODE   = true;
 // TODO : faute de mieux...
 const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome);
 
-var Patamap   = { host: 'patamap.com', url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
+var Patamap   = { url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
 
 const POSTDATA_URL = '';
 // pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
 const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 
+// Images utilisées dans le code HTML généré par le script
 var imageList = new Array();
 imageList["help"] = "http://data.hordes.fr/gfx/loc/fr/helpLink.gif";
 imageList["map"]  = "http://data.hordes.fr/gfx/icons/r_explor.gif";
 imageList["warning"]    = "http://www.hordes.fr/gfx/forum/smiley/h_warning.gif";
 imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
 imageList["anchor"]     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAQAgMAAACXY5xCAAAAAXNSR0IArs4c6QAAAAlQTFRFHQgQXCsg3at2dnylcgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAABLSURBVAjXLcqxDcAgDETRjxRlB7ZhiSClN8yThn3DnXHh+8VjPT4Y3t6ojhduR0Ax+ki0CUabJAqFkIiQiZCJUGSUlQRmO1HPcun9kAcXQ2R1ivMAAAAASUVORK5CYII=";
+
+// Si le debug mode n'est pas actif, on écrase l'objet console natif
+if( typeof(console) == 'undefined' ) {// au cas où...
+	console = {};
+}
+
+var name = null;
+var tab  = ["log","info","warn","error","debug","dirxml","dir"];
+while( (name = tab.pop()) != null ) {
+	console[name] = (typeof(console[name]) != 'undefined' && DEBUG_MODE)
+		? console[name] : function() {};
+}
 
 //
 // Compatibilité non-Gecko
@@ -160,15 +173,6 @@ function $xpath(expression, contextNode, type)
 		.evaluate(expression, contextNode, null, type, null);
 }
 
-if( !DEBUG_MODE ) {
-	console = {
-		log: function(t) {},
-		info: function(t) {},
-		warn: function(t) {},
-		error: function(t) {}
-	};
-}
-
 var HMUpdater = {
 	mainNode: null,
 	styleSheet: null,
@@ -213,17 +217,17 @@ HMUpdater.initialize = function() {
 	}, false);
 	document.body.appendChild(root);
 	
-	HMUpdater.refresh(1);
+	HMUpdater.refresh('init');
 	
 	//
 	// On s'intercalle devant la méthode js.XmlHttp.onData() pour détecter les
 	// changements de zone et mettre à jour les coordonnées
 	//
 	var init = function() {
-		js.XmlHttp._hmu_onData = js.XmlHttp.onData;
-		js.XmlHttp.onData = function(data) {
+		js.XmlHttp._hmu_onEnd = js.XmlHttp.onEnd;
+		js.XmlHttp.onEnd = function() {
 			var url = this.urlForBack;
-			this._hmu_onData(data);
+			this._hmu_onEnd();
 			
 			var node = document.getElementById('hmu-data');
 			if( node == null ) {
@@ -234,7 +238,6 @@ HMUpdater.initialize = function() {
 			}
 			node.innerHTML = url;
 			
-			// TODO déclencher l'évènement seulement si url commence par outside/ ?
 			var evt = document.createEvent('Events');
 			evt.initEvent('HMUActionPerformed', false, false);
 			document.dispatchEvent(evt);
@@ -247,7 +250,7 @@ HMUpdater.initialize = function() {
 		
 		var url = $('hmu-data').textContent;
 		
-		console.log('HMUActionPerformed event dispatched. url = ' + url);
+		console.log('HMUActionPerformed event dispatched; url = ' + url);
 		
 		if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
 			
@@ -262,15 +265,15 @@ HMUpdater.initialize = function() {
 			HMUpdater.vars['dried'] = -1;
 		}
 		
-		HMUpdater.refresh(3);
+		HMUpdater.refresh('event');
 	}, false);
 };
 
 HMUpdater.refresh = function(step) {
-	console.log('Call to HMUpdater.refresh() (step = ' + String(step) + ')');
+	console.log('Call to HMUpdater.refresh(); step = ' + String(step));
 	
 	if( $('swfmap') == null ) {
-		console.warn('#swfmap not found !');
+		console.info('#swfmap not found !');
 		
 		this.form.hide();
 		this.message.clear();
@@ -292,26 +295,12 @@ HMUpdater.refresh = function(step) {
 		$('hmupdater').style.display = 'block';
 	}
 	
-	this.mainNode = $('generic_section');
-	
-	if( this.mainNode == null ) {
-		console.warn('mainNode not found !');
-		return false;
-	}
-	
 	if( $('hmu:link') != null ) {
-		console.warn('hmu:link already exists !');
+		console.info('hmu:link already exists !');
 		return false;
 	}
 	
-	//
-	// Infos sur la ville
-	//
-	if( $('mapInfos') != null && /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
-		this.vars['mapInfos'] = {};
-		this.vars['mapInfos']['days'] = RegExp.$1;
-		this.vars['mapInfos']['name'] = $('mapInfos').firstChild.data.trim();
-	}
+	this.mainNode = $('generic_section');
 	
 	//
 	// Ajout du bouton de mise à jour et du formulaire pour les coordonnées
@@ -322,19 +311,10 @@ HMUpdater.refresh = function(step) {
 		XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue;
 	
 	if( actionPanel == null || viewPanel == null ) {
-		console.warn('actionPanel or viewPanel not found !');
-		
-		if( step == 1 ) {
-			// WorkAround : Parfois, le panneau d'actions n'existe pas encore à ce moment.
-			// On lance donc un timer pour faire le boulot X millièmes de seconde plus tard
-			var timer = setInterval(function() {
-				HMUpdater.refresh(2);
-				if( $('hmu:link') != null ) {
-					clearInterval(timer);
-				}
-			}, 50);
-		}
-		
+		// Certains appels Ajax du site hordes.fr définissent le div#generic_section,
+		// mais il ne contient pas encore les deux panneaux. Ils sont ajoutés
+		// lors de l'appel Ajax suivant.
+		console.info('actionPanel or viewPanel not found !');
 		return false;
 	}
 	
@@ -382,6 +362,15 @@ HMUpdater.refresh = function(step) {
 	}, false);
 	
 	actionPanel.appendChild(updateButton);
+	
+	//
+	// Infos sur la ville
+	//
+	if( $('mapInfos') != null && /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
+		this.vars['mapInfos'] = {};
+		this.vars['mapInfos']['days'] = RegExp.$1;
+		this.vars['mapInfos']['name'] = $('mapInfos').firstChild.data.trim();
+	}
 	
 	//
 	// Zone épuisée ?
@@ -579,16 +568,16 @@ HMUpdater.updateMap = function() {
 		}
 	}
 	
-	console.log(doc);
+	console.dirxml(doc);
 	
-	function ixhr(url, doc)
+	function ixhr(webapp, doc)
 	{
 		this.timer   = null;
 		this.method  = (doc != null) ? 'POST' : 'GET';
 		this.data    = doc;
-		this.url     = url;
+		this.url     = webapp.url;
 		
-		/:\/\/([^\/]+)\//.test(url);
+		/:\/\/([^\/]+)\//.test(this.url);
 		this.host    = RegExp.$1;
 		
 		this.headers = {
@@ -597,6 +586,8 @@ HMUpdater.updateMap = function() {
 		};
 		
 		this.onerror = function() {
+			console.log("Request to URL '" + this.url + "' failed");
+			
 			clearTimeout(this.timer);
 			this.onload = function(){};
 			HMUpdater.message.error("Le site <strong>" + this.host + "</strong> ne répond pas\u00A0!");
@@ -604,16 +595,12 @@ HMUpdater.updateMap = function() {
 		};
 		
 		this.onload  = function(responseDetails) {
-			clearTimeout(this.timer);
 			console.log("Request to URL '" + this.url + "'");
 			
+			clearTimeout(this.timer);
+			
 			var target = '<strong>';
-			if( this.host == Patamap.host ) {
-				target += Patamap.label;
-			}
-			else {
-				target += this.host;
-			}
+			target += (webapp.label != null) ? webapp.label : this.host;
 			target += '</strong>';
 			
 			if( responseDetails.status == 200 ) {
@@ -648,9 +635,9 @@ HMUpdater.updateMap = function() {
 						(multipleUpdate == true ? ' sur ' + target : '') + "\u00A0!");
 				}
 				else {
-					HMUpdater.message.error("Erreur renvoyée par " + target +
-						(code != null ? '\u00A0: ' + code : '') +
+					HMUpdater.message.error("Erreur renvoyée par " + target + '\u00A0: ' + code +
 						(message != null ? "<br/><em>" + message + "</em>" : ""),
+						// Ajustement du délai avant de masquer la boite à message
 						(message != null ? message.length/10 : null)
 					);
 				}
@@ -658,8 +645,9 @@ HMUpdater.updateMap = function() {
 				console.log('Response : ' + responseDetails.responseText);
 			}
 			else {
-				HMUpdater.message.error("Erreur HTTP renvoyée par " + target +
-					"\u00A0: " + responseDetails.status + ' ' + responseDetails.statusText);
+				var httpResponse = responseDetails.status + ' ' + responseDetails.statusText;
+				HMUpdater.message.error("Erreur HTTP renvoyée par " + target + "\u00A0: " + httpResponse);
+				console.log('Response : HTTP ' + httpResponse);
 			}
 			
 			HMUpdater.finishUpdate();
@@ -681,7 +669,7 @@ HMUpdater.updateMap = function() {
 	if( updatePatamap == true ) {
 		this.counter++;
 		citizen.setAttribute('key', Patamap.key);
-		GM_xmlhttpRequest(new ixhr(Patamap.url, doc));
+		GM_xmlhttpRequest(new ixhr(Patamap, doc));
 	}
 	
 	if( updateCustom == true ) {
@@ -690,7 +678,7 @@ HMUpdater.updateMap = function() {
 		var urls = postdata_url.split('|');
 		for( var i = 0, m = urls.length; i < m; i++ ) {
 			this.counter++;
-			GM_xmlhttpRequest(new ixhr(urls[i], doc));
+			GM_xmlhttpRequest(new ixhr({url: urls[i], label: null}, doc));
 		}
 	}
 	
@@ -700,6 +688,7 @@ HMUpdater.updateMap = function() {
 HMUpdater.finishUpdate = function() {
 	this.counter--;
 	if( this.counter == 0 ) {
+		console.log('Update action finished');
 		// On masque l'image de chargement
 		$('loading_section').style.display = 'none';
 		document.body.style.cursor = 'auto';
@@ -727,6 +716,7 @@ HMUpdater.coords = {
 		}
 	},
 	prompt: function() {
+		console.info('Need coords to be set manually');
 		$('hmu:coords').style.display = 'block';
 		$('hmu:coords').elements.namedItem('coords').focus();
 	}
@@ -766,6 +756,7 @@ HMUpdater.message = {
 			this.delay = 0;
 		}
 	},
+	// function(message, delay = 4.5)
 	error: function(message) {
 		HMUpdater.error = true;
 		this.show(message, ((arguments.length > 1 && arguments[1] != null) ? arguments[1] : this.defaultDelay));
@@ -979,6 +970,8 @@ HMUpdater.checkVersion = function(version) {
 
 HMUpdater.getSecretKey = function(webapp) {
 	this.lock = true;
+	
+	console.log('Fetching disclaimer to get secret key; webapp = ' + webapp.label);
 	
 	var xhr = new XMLHttpRequest();
 	xhr.open('GET', '/disclaimer?id=' + webapp.id + ';rand='  + Math.random(), true);
