@@ -597,6 +597,7 @@ HMUpdater.updateMap = function() {
 		};
 		
 		this.onerror = function() {
+			clearTimeout(this.timer);
 			this.onload = function(){};
 			HMUpdater.message.error("Le site <strong>" + this.host + "</strong> ne répond pas\u00A0!");
 			HMUpdater.finishUpdate();
