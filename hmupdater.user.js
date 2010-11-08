@@ -392,7 +392,7 @@ HMUpdater.refresh = function(step) {
 	// (Contrôle de case perdu donc perte de l'info dans le code source HTML)
 	// 
 	if( this.vars['dried'] == -1 ) {
-		var driedTest = $xpath('div[@class="left"]/div[@class="driedZone"]',
+		var driedTest = $xpath('./div[@class="left"]/div[@class="driedZone"]',
 			this.mainNode, XPathResult.BOOLEAN_TYPE).booleanValue;
 		if( driedTest == true ) {// bloc "La zone est épuisée" présent
 			this.vars['dried'] = 1;
@@ -400,7 +400,7 @@ HMUpdater.refresh = function(step) {
 		else {
 			// Si les zombies contrôlent la zone, on ne sait pas, sinon,
 			// c'est que la zone n'est pas épuisée
-			driedTest = $xpath('div[@class="feist"]',
+			driedTest = $xpath('./div[@class="feist"]',
 				this.mainNode, XPathResult.BOOLEAN_TYPE).booleanValue;
 			if( driedTest == false ) {
 				this.vars['dried'] = 0;
