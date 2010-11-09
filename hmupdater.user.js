@@ -252,13 +252,18 @@ HMUpdater.initialize = function() {
 		
 		console.log('HMUActionPerformed event dispatched; url = ' + url);
 		
-		if( /outside\/go\?x=([0-9-]+);y=([0-9-]+)/.test(url) ) {
+		if( /outside\/go\?x=(-?[0-9]+);y=(-?[0-9]+)/.test(url) ) {
 			
 			if( HMUpdater.coords.get() != null ) {
 				
 				var coords = HMUpdater.coords.get().split('.');
+				
+				// hack dégueu. Bug de hordes.fr qui incrémente l'ordonnée lors
+				// d'un mouvement nord-sud (alors que cette axe court de +y à -y)
+				var y = RegExp.$2.indexOf('-') == 0 ? Math.abs(RegExp.$2) : '-'+RegExp.$2;
+				
 				coords[0] = parseInt(coords[0]) + parseInt(RegExp.$1);
-				coords[1] = parseInt(coords[1]) + parseInt(RegExp.$2);
+				coords[1] = parseInt(coords[1]) + parseInt(y);
 				HMUpdater.coords.set(coords.join('.'));
 			}
 			
@@ -330,7 +335,7 @@ HMUpdater.refresh = function(step) {
 		evt.preventDefault();
 		var coords = this.elements.namedItem('coords').value.trim();
 		
-		if( /^[0-9]{1,2}(\.|,)[0-9]{1,2}$/.test(coords) ) {
+		if( /^-?[0-9]{1,2}(\.|,)-?[0-9]{1,2}$/.test(coords) ) {
 			this.style.display = 'none';
 			HMUpdater.coords.set(coords.replace(',', '.'));
 			HMUpdater.updateMap();
