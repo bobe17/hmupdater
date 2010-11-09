@@ -244,7 +244,11 @@ HMUpdater.initialize = function() {
 		};
 	};
 	
-	location.assign("javascript:var init = " + init.toString().replace(/\n[ \t]*\/\/[^\n]+/g, '').replace(/\n/g,"") + ";init();");
+	var script = document.createElement('script');
+	script.setAttribute('id',   'hmu:script');
+	script.setAttribute('type', 'application/javascript');
+	document.body.appendChild(script);
+	script.textContent = 'var HMUpdater = {init: ' + init.toString() + '}; HMUpdater.init();';
 	
 	document.addEventListener('HMUActionPerformed', function(evt) {
 		
