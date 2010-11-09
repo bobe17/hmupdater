@@ -229,10 +229,10 @@ HMUpdater.initialize = function() {
 			var url = this.urlForBack;
 			this._hmu_onEnd();
 			
-			var node = document.getElementById('hmu-data');
+			var node = document.getElementById('hmu:data');
 			if( node == null ) {
 				node = document.createElement('div');
-				node.setAttribute('id', 'hmu-data');
+				node.setAttribute('id', 'hmu:data');
 				node.style.display = 'none';
 				document.body.appendChild(node);
 			}
@@ -252,7 +252,7 @@ HMUpdater.initialize = function() {
 	
 	document.addEventListener('HMUActionPerformed', function(evt) {
 		
-		var url = $('hmu-data').textContent;
+		var url = $('hmu:data').textContent;
 		
 		console.log('HMUActionPerformed event dispatched; url = ' + url);
 		
