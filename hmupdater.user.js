@@ -476,7 +476,7 @@ HMUpdater.updateMap = function() {
 	}
 	
 	// Listing des objets présents par terre
-	var items = $xpath('./div[@class="right"]/ul[@class="tools shortTools outInv"]//img[@alt="item"]',
+	var items = $xpath('./div[@class="right"]/ul[contains(concat(" ", @class, " "), "outInv")]//img[@alt="item"]',
 		this.mainNode, XPathResult.ANY_TYPE);
 	var item = null, name = null;
 	var itemsArray = [];
