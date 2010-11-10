@@ -36,7 +36,14 @@ const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 // TODO : faute de mieux...
 const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome);
 
-var Patamap   = { url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
+//
+// Maps externes bénéficiant d’un accès sécurisé au flux du site hordes.fr
+//
+var webapps = {};
+webapps['Patamap'] = { id: 9,  url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', key: null };
+webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'BigBroth\'Hordes', key: null };
+webapps['HUM']     = { id: 36, url: 'http://www.hordes-ultimate-manager.net/hmupdater/index.php', label: 'Ultimate Manager', key: null };
+//webapps['OEEV']    = { id: 22, url: 'http://www.oeev-hordes.com/', label: 'OEEV ? (en dev)', key: null };
 
 // Images utilisées dans le code HTML généré par le script
 var imageList = new Array();
@@ -371,15 +378,6 @@ HMUpdater.refresh = function(step) {
 	actionPanel.appendChild(updateButton);
 	
 	//
-	// Infos sur la ville
-	//
-	if( $('mapInfos') != null && /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
-		this.vars['mapInfos'] = {};
-		this.vars['mapInfos']['days'] = RegExp.$1;
-		this.vars['mapInfos']['name'] = $('mapInfos').firstChild.data.trim();
-	}
-	
-	//
 	// Zone épuisée ?
 	// 
 	// On vérifie ici et on stocke l'info. L'utilisation classique étant 
@@ -420,18 +418,31 @@ HMUpdater.updateMap = function() {
 	var login  = GM_getValue('login', '');
 	var pubkey = GM_getArrayValue('pubkeys', login, '');
 	var postdata_url = GM_getArrayValue('postdata_urls', login, '');
+	var updateCustom = Boolean(GM_getArrayValue('updateCustom', login, false));
+	var updateWebapp = false;
+	var updateCount  = 0;
 	
-	var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
-	var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
-	
-	if( updatePatamap == true && Patamap.key == null ) {
-		this.getSecretKey(Patamap);
-		return false;
+	if( updateCustom == true ) {
+		updateCount++;
 	}
 	
-	if( login == '' || (updatePatamap == false && updateCustom == false) ||
-		(updateCustom == true && (pubkey == '' || postdata_url == '')) )
-	{
+	for( var name in webapps ) {
+		webapps[name].update = Boolean(GM_getArrayValue('update'+name, login, false));
+		
+		if( webapps[name].update == true ) {
+			updateWebapp = true;
+			updateCount++;
+		}
+	}
+	
+	HMUpdater.isMultipleUpdate = (updateCount > 1);
+	
+	var displayConfigPanel = false;
+	displayConfigPanel = (updateCustom == true && (pubkey == '' || postdata_url == ''));
+	displayConfigPanel = displayConfigPanel || (!updateWebapp && !updateCustom);
+	displayConfigPanel = displayConfigPanel || (login == '');
+	
+	if( displayConfigPanel ) {
 		this.form.onvalidate = function() { HMUpdater.updateMap(); };
 		this.form.show();
 		return false;
@@ -450,6 +461,14 @@ HMUpdater.updateMap = function() {
 	// Récupération des données
 	//
 	console.log('Fetching data from HTML page');
+	
+	// Infos sur la ville
+	var days = -1;
+	var cityname = 'Unknown';
+	if( /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
+		days = RegExp.$1;
+		cityname = $('mapInfos').firstChild.data.trim();
+	}
 	
 	// Un bâtiment dans la zone ?
 	var buildingName = '';
@@ -478,7 +497,7 @@ HMUpdater.updateMap = function() {
 	// Listing des objets présents par terre
 	var items = $xpath('./div[@class="right"]/ul[contains(concat(" ", @class, " "), " outInv ")]//img[@alt="item"]',
 		this.mainNode, XPathResult.ANY_TYPE);
-	var item = null, name = null;
+	var item = null;
 	var itemsArray = [];
 	
 	while( (item = items.iterateNext()) != null ) {
@@ -518,12 +537,11 @@ HMUpdater.updateMap = function() {
 	doc.documentElement.appendChild(headers);
 	
 	var city = doc.createElement('city');
-	city.setAttribute('name', this.vars['mapInfos']['name']);
-	city.setAttribute('days', this.vars['mapInfos']['days']);
+	city.setAttribute('name', cityname);
+	city.setAttribute('days', days);
 	doc.documentElement.appendChild(city);
 	
 	var citizen = doc.createElement('citizen');
-	citizen.setAttribute('key', pubkey);
 	citizen.setAttribute('login', login);
 	doc.documentElement.appendChild(citizen);
 	
@@ -577,6 +595,49 @@ HMUpdater.updateMap = function() {
 	
 	console.dirxml(doc);
 	
+	this.lock  = true;
+	this.error = false;
+	
+	// On affichage l'image de chargement
+	$('loading_section').style.display = 'block';
+	document.body.style.cursor = 'progress';
+	
+	for( name in webapps ) {
+		webapps[name].update = Boolean(GM_getArrayValue('update'+name, login, false));
+		
+		if( webapps[name].update == true ) {
+			this.sendData(webapps[name], doc);
+		}
+	}
+	
+	if( updateCustom == true ) {
+		var urls = postdata_url.split('|');
+		for( var i = 0, m = urls.length; i < m; i++ ) {
+			this.sendData({id: null, url: urls[i], key: pubkey}, doc);
+		}
+	}
+};
+
+HMUpdater.sendData = function(webapp, doc) {
+	if( webapp.id != null && webapp.key == null ) {
+		console.log('Fetching disclaimer to get secret key; webapp = ' + webapp.label);
+		
+		var xhr = new XMLHttpRequest();
+		xhr.open('GET', '/disclaimer?id=' + webapp.id + ';rand='  + Math.random(), true);
+		xhr.setRequestHeader('Accept', 'text/xml,application/xml');
+		xhr.setRequestHeader('X-Handler','js.XmlHttp');
+		xhr.onload = function() {
+			if( /name=\"key\"\s+value=\"([a-zA-Z0-9]+)\"/.test(this.responseText) ) {
+				webapp.key = RegExp.$1;
+			}
+			
+			HMUpdater.sendData(webapp, doc);
+		};
+		xhr.send(null);
+		
+		return false;
+	}
+	
 	function ixhr(webapp, doc)
 	{
 		this.timer   = null;
@@ -607,7 +668,7 @@ HMUpdater.updateMap = function() {
 			clearTimeout(this.timer);
 			
 			var target = '<strong>';
-			target += (webapp.label != null) ? webapp.label : this.host;
+			target += (webapp.id != null) ? webapp.label : this.host;
 			target += '</strong>';
 			
 			if( responseDetails.status == 200 ) {
@@ -620,7 +681,7 @@ HMUpdater.updateMap = function() {
 					
 					code = error.getAttribute('code');
 					message = error.textContent.replace(/</g, '&lt;');
-					
+					/*
 					if( HMUpdater.checkVersion(version) == true ) {
 						HMUpdater.message.clear();
 						HMUpdater.message.show("Une nouvelle version du script est disponible " +
@@ -628,7 +689,7 @@ HMUpdater.updateMap = function() {
 							"Votre version peut ne plus fonctionner correctement, " +
 							"vous devriez faire cette mise à jour " +
 							"(Pensez ensuite à recharger cette page).", -1);
-					}
+					}*/
 				}
 				catch(e) {
 					message = 'Erreur inattendue';
@@ -638,8 +699,8 @@ HMUpdater.updateMap = function() {
 				
 				if( code == 'ok' ) {
 					HMUpdater.message.show("La M@p a été mise à jour " +
-						(coords != null ? "en <strong>" + coords.join('.') + "</strong>" : '') +
-						(multipleUpdate == true ? ' sur ' + target : '') + "\u00A0!");
+						(HMUpdater.coords.get() != null ? "en <strong>" + HMUpdater.coords.get() + "</strong>" : '') +
+						(HMUpdater.isMultipleUpdate == true ? ' sur ' + target : '') + "\u00A0!");
 				}
 				else {
 					HMUpdater.message.error("Erreur renvoyée par " + target + '\u00A0: ' +
@@ -666,31 +727,11 @@ HMUpdater.updateMap = function() {
 		this.timer = setTimeout(function() {xhr.onerror();}, (HMU_TIMEOUT * 1000));
 	}
 	
-	this.lock  = true;
-	this.error = false;
-	
-	// On affichage l'image de chargement
-	$('loading_section').style.display = 'block';
-	document.body.style.cursor = 'progress';
-	
-	if( updatePatamap == true ) {
-		this.counter++;
-		citizen.setAttribute('key', Patamap.key);
-		GM_xmlhttpRequest(new ixhr(Patamap, doc));
-	}
-	
-	if( updateCustom == true ) {
-		citizen.setAttribute('key', pubkey);
-		
-		var urls = postdata_url.split('|');
-		for( var i = 0, m = urls.length; i < m; i++ ) {
-			this.counter++;
-			GM_xmlhttpRequest(new ixhr({url: urls[i], label: null}, doc));
-		}
-	}
-	
-	var multipleUpdate = (this.counter > 1);
-};// fin de updateMap()
+	this.counter++;
+	// TODO : cloner le document avant de faire ça ?
+	doc.getElementsByTagName('citizen')[0].setAttribute('key', webapp.key);
+	GM_xmlhttpRequest(new ixhr(webapp, doc));
+};
 
 HMUpdater.finishUpdate = function() {
 	this.counter--;
@@ -857,8 +898,11 @@ HMUpdater.form = {
 			// end hack
 			
 			GM_setArrayValue('postdata_urls', login, postdata_url);
-			GM_setArrayValue('updatePatamap', login, $('hmu:choice:patamap').checked);
-			GM_setArrayValue('updateCustom', login, $('hmu:choice:custom').checked);
+			GM_setArrayValue('updateCustom',  login, $('hmu:choice:custom').checked);
+			
+			for( var name in webapps ) {
+				GM_setArrayValue('update'+name, login, $('hmu:choice:'+name).checked);
+			}
 		}
 	},
 	create: function() {
@@ -876,12 +920,16 @@ HMUpdater.form = {
 		HMUpdater.addStyle('#hmu\\:form a.toolAction { text-decoration:underline; }');
 		HMUpdater.addStyle('#hmu\\:form a.helpLink { position:relative;top:4px; }');
 		
+		var checkboxList = '';
+		for( var name in webapps ) {
+			checkboxList += '<label><input type="checkbox" id="hmu:choice:'+name+'"> <span>Mettre à jour ' + webapps[name].label + '</span></label>';
+		}
+		
 		this.html = document.createElement('div');
 		this.html.setAttribute('id', 'hmu:form');
 		this.html.innerHTML = '<div class="hmu:class:box"><form action="#" class="form">' +
+'<div class="row checkbox">' + checkboxList + '</div>' +
 '<div class="row checkbox">' +
-'<label><input type="checkbox" id="hmu:choice:patamap"> <span>Mettre à jour ' + Patamap.label + '</span></label>' +
-'</div><div class="row checkbox">' +
 '<label><input type="checkbox" id="hmu:choice:custom"> <span>Spécifier une autre URL</span></label>' +
 '<a class="helpLink" onmouseout="js.HordeTip.hide()" onmouseover="js.HordeTip.showHelp(this,\'Vous pouvez également spécifier plusieurs URLs en les séparant avec une barre verticale (|). Les données seront alors envoyées à chaque URL.\');document.getElementById(\'tooltip\').style.zIndex = 1003;" onclick="return false;" href="#">' +
 '<img alt="Aide" src="'+imageList['help']+'"/></a>' +
@@ -909,11 +957,12 @@ HMUpdater.form = {
 		var pubkey = GM_getArrayValue('pubkeys', login, '');
 		var url    = GM_getArrayValue('postdata_urls', login, '');
 		
-		var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
 		var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
-		
-		$('hmu:choice:patamap').checked = updatePatamap;
 		$('hmu:choice:custom').checked  = updateCustom;
+		
+		for( name in webapps ) {
+			$('hmu:choice:'+name).checked = Boolean(GM_getArrayValue('update'+name, login, false));
+		}
 		
 		if( updateCustom == false ) {
 			$('hmu:custom:infos').style.display = 'none';
@@ -974,28 +1023,6 @@ HMUpdater.checkVersion = function(version) {
 	v2[0] = Number(v2[0]);v2[1] = Number(v2[1]);
 	
 	return (v2[0] > v1[0] || (v2[0] == v1[0] && v2[1] > v1[1]));
-};
-
-HMUpdater.getSecretKey = function(webapp) {
-	this.lock = true;
-	
-	console.log('Fetching disclaimer to get secret key; webapp = ' + webapp.label);
-	
-	var xhr = new XMLHttpRequest();
-	xhr.open('GET', '/disclaimer?id=' + webapp.id + ';rand='  + Math.random(), true);
-	xhr.setRequestHeader('Accept', 'text/xml,application/xml');
-	xhr.setRequestHeader("X-Handler","js.XmlHttp");
-	xhr.onload = function() {
-		if( /name=\"key\"\s+value=\"([a-zA-Z0-9]+)\"/.test(this.responseText) ) {
-			webapp.key = RegExp.$1;
-		}
-		
-		if( webapp.key != null ) {// TODO : erroné. Tous les webapp à contacter doivent avoir key != null
-			HMUpdater.lock = false;
-			HMUpdater.updateMap();
-		}
-	};
-	xhr.send(null);
 };
 
 //
