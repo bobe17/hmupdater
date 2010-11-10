@@ -30,15 +30,13 @@ const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
 const DEBUG_MODE   = true;
+// pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
+const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 
 // TODO : faute de mieux...
 const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome);
 
 var Patamap   = { url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', id: 9, key: null };
-
-const POSTDATA_URL = '';
-// pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
-const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 
 // Images utilisées dans le code HTML généré par le script
 var imageList = new Array();
@@ -421,7 +419,7 @@ HMUpdater.updateMap = function() {
 	//
 	var login  = GM_getValue('login', '');
 	var pubkey = GM_getArrayValue('pubkeys', login, '');
-	var postdata_url = GM_getArrayValue('postdata_urls', login, POSTDATA_URL);
+	var postdata_url = GM_getArrayValue('postdata_urls', login, '');
 	
 	var updatePatamap = Boolean(GM_getArrayValue('updatePatamap', login, false));
 	var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
@@ -644,7 +642,7 @@ HMUpdater.updateMap = function() {
 						(multipleUpdate == true ? ' sur ' + target : '') + "\u00A0!");
 				}
 				else {
-					HMUpdater.message.error("Erreur renvoyée par " + target + '\u00A0: ' + code +
+					HMUpdater.message.error("Erreur renvoyée par " + target + '\u00A0: ' +
 						(message != null ? "<br/><em>" + message + "</em>" : ""),
 						// Ajustement du délai avant de masquer la boite à message
 						(message != null ? message.length/10 : null)
@@ -868,14 +866,15 @@ HMUpdater.form = {
 		HMUpdater.addStyle('#hmu\\:form .hmu\\:class\\:box { position:absolute; z-index:1002;' +
 			'left:0; right:0; margin:auto; width:550px; outline:2px solid black; padding:5px; border-color:#b37c4a; }');
 		HMUpdater.addStyle('#hmu\\:form .form { width:auto; margin:0; padding:5px; }');
-		HMUpdater.addStyle('#hmu\\:form .row label { width:200px; cursor:pointer; }');
-		HMUpdater.addStyle('#hmu\\:form .row.checkbox label { width:48%; padding-left:2px; }');
+		HMUpdater.addStyle('#hmu\\:form .row label { display:inline-block; float:none;' +
+			'width:200px; height:auto; margin: 2px 6px 2px 0; padding-left:2px; line-height: 1.4; cursor:pointer; }');
+		HMUpdater.addStyle('#hmu\\:form .row.checkbox label { width:260px; vertical-align: middle; white-space:nowrap; }');
 		HMUpdater.addStyle('#hmu\\:form .row.checkbox label * { vertical-align: middle; }');
-		HMUpdater.addStyle('#hmu\\:form .row.checkbox input { margin-top:2px; }');
-		HMUpdater.addStyle('#hmu\\:form .special { min-height:0;margin:8px 2px 10px;' +
-			'padding-left:20px;background:transparent url("'+imageList['small_move']+'") no-repeat center left; }');
+		HMUpdater.addStyle('#hmu\\:form .row.checkbox input { margin:1px; }');
+		HMUpdater.addStyle('#hmu\\:form .special { min-height:0;margin:8px 2px 10px; padding-left:20px;' +
+			'background:transparent url("'+imageList['small_move']+'") no-repeat center left; }');
 		HMUpdater.addStyle('#hmu\\:form a.toolAction { text-decoration:underline; }');
-		HMUpdater.addStyle('#hmu\\:form a.helpLink { position:relative;top:2px; }');
+		HMUpdater.addStyle('#hmu\\:form a.helpLink { position:relative;top:4px; }');
 		
 		this.html = document.createElement('div');
 		this.html.setAttribute('id', 'hmu:form');
