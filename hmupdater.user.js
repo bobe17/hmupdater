@@ -34,7 +34,7 @@ const DEBUG_MODE   = true;
 const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
 
 // TODO : faute de mieux...
-const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome);
+const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome && !window.safari && !window.opera);
 
 //
 // Maps externes bénéficiant d’un accès sécurisé au flux du site hordes.fr
@@ -523,7 +523,9 @@ HMUpdater.updateMap = function() {
 	//
 	console.log('Generating XML document');
 	
-	var doc = document.implementation.createDocument("", "hordes", null);
+//	var doc = document.implementation.createDocument("", "hordes", null);
+	// TODO : temporaire; pour Safari 5 + NinjaKit
+	var doc = new DOMParser().parseFromString('<hordes></hordes>', 'application/xml');
 	
 	if( doc.inputEncoding != null ) {
 		var pi  = doc.createProcessingInstruction('xml',
