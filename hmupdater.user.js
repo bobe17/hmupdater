@@ -25,6 +25,8 @@
 // - Ajouter une croix de fermeture en haut à droite de la boîte à message ?
 //
 
+(function(){
+
 const HMU_VERSION  = '1.3';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
@@ -253,7 +255,7 @@ HMUpdater.initialize = function() {
 	script.setAttribute('id',   'hmu:script');
 	script.setAttribute('type', 'application/javascript');
 	document.body.appendChild(script);
-	script.textContent = 'var HMUpdater = {init: ' + init.toString() + '}; HMUpdater.init();';
+	script.textContent = '(' + init.toString() + ')();';
 	
 	document.addEventListener('HMUActionPerformed', function(evt) {
 		
@@ -1032,3 +1034,4 @@ HMUpdater.checkVersion = function(version) {
 //
 HMUpdater.initialize();
 
+})();
