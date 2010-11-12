@@ -19,11 +19,6 @@
 // @include        http://www.hordes.fr/*
 // @version        1.3
 // ==/UserScript==
-// 
-// @todo
-// - revoir ixhr, finishUpdate (counter)
-// - Ajouter une croix de fermeture en haut à droite de la boîte à message ?
-//
 
 (function(){
 
@@ -31,6 +26,7 @@ const HMU_VERSION  = '1.3';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
+const HMU_CHECKVER = HMU_APPHOME + 'version?output=js';
 const DEBUG_MODE   = true;
 // pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
 const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
@@ -188,7 +184,9 @@ var HMUpdater = {
 	counter: 0,
 	vars: {
 		dried: -1,
-		mapInfos: null
+		days: -1,
+		hardcore: null,
+		cityname: 'Unknown'
 	}
 };
 
@@ -224,7 +222,12 @@ HMUpdater.initialize = function() {
 	}, false);
 	document.body.appendChild(root);
 	
-	HMUpdater.refresh('init');
+	// Check de version
+	var script = document.createElement('script');
+	script.setAttribute('id',   'hmu:script:last-version');
+	script.setAttribute('type', 'application/javascript');
+	script.setAttribute('src',  HMU_CHECKVER);
+	root.appendChild(script);
 	
 	//
 	// On s'intercalle devant la méthode js.XmlHttp.onData() pour détecter les
@@ -236,14 +239,13 @@ HMUpdater.initialize = function() {
 			var url = this.urlForBack;
 			this._hmu_onEnd();
 			
-			var node = document.getElementById('hmu:data');
-			if( node == null ) {
-				node = document.createElement('div');
-				node.setAttribute('id', 'hmu:data');
-				node.style.display = 'none';
-				document.body.appendChild(node);
+			var hmupdater = document.getElementById('hmupdater');
+			hmupdater.setAttribute('hmu:url', url);
+			// On ne peut pas récupérer HMU_LAST_VERSION directement dans init(),
+			// il n'est pas encore dispo à ce moment-là sur chrome/chromium...
+			if( !hmupdater.hasAttribute('hmu:last-version') && typeof(HMU_LAST_VERSION) != 'undefined' ) {
+				hmupdater.setAttribute('hmu:last-version', HMU_LAST_VERSION);
 			}
-			node.innerHTML = url;
 			
 			var evt = document.createEvent('Events');
 			evt.initEvent('HMUActionPerformed', false, false);
@@ -252,14 +254,14 @@ HMUpdater.initialize = function() {
 	};
 	
 	var script = document.createElement('script');
-	script.setAttribute('id',   'hmu:script');
+	script.setAttribute('id',   'hmu:script:init');
 	script.setAttribute('type', 'application/javascript');
-	document.body.appendChild(script);
+	root.appendChild(script);
 	script.textContent = '(' + init.toString() + ')();';
 	
 	document.addEventListener('HMUActionPerformed', function(evt) {
 		
-		var url = $('hmu:data').textContent;
+		var url = $('hmupdater').getAttribute('hmu:url');
 		
 		console.log('HMUActionPerformed event dispatched; url = ' + url);
 		
@@ -283,6 +285,9 @@ HMUpdater.initialize = function() {
 		
 		HMUpdater.refresh('event');
 	}, false);
+	
+	// Refresh initial
+	HMUpdater.refresh('init');
 };
 
 HMUpdater.refresh = function(step) {
@@ -311,8 +316,21 @@ HMUpdater.refresh = function(step) {
 		$('hmupdater').style.display = 'block';
 	}
 	
+	// Vérification de la dernière version publiée
+	if( $('hmupdater').hasAttribute('hmu:last-version') ) {
+		
+		if( this.checkVersion($('hmupdater').getAttribute('hmu:last-version')) == true ) {
+			this.message.clear();
+			this.message.show("Une nouvelle version du script est disponible " +
+				"en <a href='" + HMU_APPHOME + "'>téléchargement</a>.<br>" +
+				"Votre version peut ne plus fonctionner correctement, " +
+				"vous devriez faire cette mise à jour " +
+				"(Pensez ensuite à recharger cette page).", -1);
+		}
+	}
+	
 	if( $('hmu:link') != null ) {
-		console.info('hmu:link already exists !');
+		console.info('hmu:link already exist !');
 		return false;
 	}
 	
@@ -378,6 +396,29 @@ HMUpdater.refresh = function(step) {
 	}, false);
 	
 	actionPanel.appendChild(updateButton);
+	
+	//
+	// Infos sur la ville
+	//
+	if( $('mapInfos') != null ) {
+		this.vars['cityname'] = $('mapInfos').firstChild.data.trim();
+		
+		if( /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
+			this.vars['days'] = RegExp.$1;
+		}
+		
+		// Pandémonium ?
+		if( this.vars['hardcore'] == null ) {
+			this.vars['hardcore'] = $xpath('span[@class="hardcore"]', $('mapInfos'),
+				XPathResult.BOOLEAN_TYPE).booleanValue;
+			if( this.vars['hardcore'] ) {
+				console.log('Hardcore Mode detected - Restriction on data sent');
+			}
+		}
+	}
+	else {
+		console.warn('#mapInfos node doesn\'t exist (??)');
+	}
 	
 	//
 	// Zone épuisée ?
@@ -464,14 +505,6 @@ HMUpdater.updateMap = function() {
 	//
 	console.log('Fetching data from HTML page');
 	
-	// Infos sur la ville
-	var days = -1;
-	var cityname = 'Unknown';
-	if( /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
-		days = RegExp.$1;
-		cityname = $('mapInfos').firstChild.data.trim();
-	}
-	
 	// Un bâtiment dans la zone ?
 	var buildingName = '';
 	var ruine = $xpath('count(./div[@class="outSpot"]//img[@alt="x"])',
@@ -502,7 +535,7 @@ HMUpdater.updateMap = function() {
 	var item = null;
 	var itemsArray = [];
 	
-	while( (item = items.iterateNext()) != null ) {
+	while( !this.vars['hardcore'] && (item = items.iterateNext()) != null ) {
 		name = item.getAttribute('src');
 		name = (/\/item_([^\/.]+)/.test(name) == true) ? RegExp.$1 : '';
 		
@@ -541,8 +574,8 @@ HMUpdater.updateMap = function() {
 	doc.documentElement.appendChild(headers);
 	
 	var city = doc.createElement('city');
-	city.setAttribute('name', cityname);
-	city.setAttribute('days', days);
+	city.setAttribute('name', this.vars['cityname']);
+	city.setAttribute('days', this.vars['days']);
 	doc.documentElement.appendChild(city);
 	
 	var citizen = doc.createElement('citizen');
@@ -680,20 +713,10 @@ HMUpdater.sendData = function(webapp, doc) {
 				
 				try {
 					var doc = new DOMParser().parseFromString(responseDetails.responseText, 'application/xml');
-					var version = doc.getElementsByTagName('headers')[0].getAttribute('version');
-					var error   = doc.getElementsByTagName('error')[0];
+					var error = doc.getElementsByTagName('error')[0];
 					
 					code = error.getAttribute('code');
 					message = error.textContent.replace(/</g, '&lt;');
-					/*
-					if( HMUpdater.checkVersion(version) == true ) {
-						HMUpdater.message.clear();
-						HMUpdater.message.show("Une nouvelle version du script est disponible " +
-							"en <a href='" + HMU_APPHOME + "'>téléchargement</a>.<br>" +
-							"Votre version peut ne plus fonctionner correctement, " +
-							"vous devriez faire cette mise à jour " +
-							"(Pensez ensuite à recharger cette page).", -1);
-					}*/
 				}
 				catch(e) {
 					message = 'Erreur inattendue';
@@ -836,6 +859,7 @@ HMUpdater.message = {
 	},
 	create: function() {
 		HMUpdater.addStyle('#hmu\\:message { transition: opacity 1.4s; -o-transition: opacity 1.4s; -moz-transition: opacity 1.4s; -webkit-transition: opacity 1.4s;' +
+			'box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8); -moz-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8); -webkit-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8);' +
 			'display:none; position:fixed; bottom:3.4em; right:2.4em;' +
 			'z-index:1001; min-width:250px; max-width:500px; text-align:left;' +
 			'border-radius:8px; -moz-border-radius:8px; font-family:"Bitstream Vera Sans",Verdana,sans-serif;}');
