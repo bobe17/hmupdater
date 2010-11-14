@@ -17,12 +17,12 @@
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour d'une M@p d'objets à partir de hordes.fr
 // @include        http://www.hordes.fr/*
-// @version        1.3
+// @version        1.4
 // ==/UserScript==
 
 (function(){
 
-const HMU_VERSION  = '1.3';
+const HMU_VERSION  = '1.4';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
