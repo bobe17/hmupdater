@@ -38,10 +38,11 @@ const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome && !w
 // Maps externes bénéficiant d’un accès sécurisé au flux du site hordes.fr
 //
 var webapps = {};
-webapps['Patamap'] = { id: 9,  url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', key: null };
-webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'BigBroth\'Hordes', key: null };
-webapps['HUM']     = { id: 36, url: 'http://www.hordes-ultimate-manager.net/hmupdater/index.php', label: 'Ultimate Manager', key: null };
-//webapps['OEEV']    = { id: 22, url: 'http://www.oeev-hordes.com/', label: 'OEEV ? (en dev)', key: null };
+webapps['Patamap'] = { id: 9,  url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', key: null, xml: true };
+webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'BigBroth\'Hordes', key: null, xml: true };
+webapps['HUM']     = { id: 36, url: 'http://www.hordes-ultimate-manager.net/hmupdater/index.php', label: 'Ultimate Manager', key: null, xml: true };
+webapps['LCN']     = { id: 14, url: 'http://www.lacitadellenoire.com/carte.php', label: 'La Citadelle Noire', key: null, xml: false };
+webapps['OEEV']    = { id: 22, url: 'http://www.oeev-hordes.com/', label: 'OEEV', key: null, xml: false };
 
 // Images utilisées dans le code HTML généré par le script
 var imageList = new Array();
@@ -650,7 +651,7 @@ HMUpdater.updateMap = function() {
 	if( updateCustom == true ) {
 		var urls = postdata_url.split('|');
 		for( var i = 0, m = urls.length; i < m; i++ ) {
-			this.sendData({id: null, url: urls[i], key: pubkey}, doc);
+			this.sendData({id: null, url: urls[i], key: pubkey, xml: true}, doc);
 		}
 	}
 };
@@ -765,9 +766,15 @@ HMUpdater.sendData = function(webapp, doc) {
 		this.timer = setTimeout(function() {xhr.onerror();}, (HMU_TIMEOUT * 1000));
 	}
 	
+	if( webapp.xml == true ) {
+		// TODO : cloner le document avant de faire ça ?
+		doc.getElementsByTagName('citizen')[0].setAttribute('key', webapp.key);
+	}
+	else {
+		doc = 'key='+webapp.key+'&mode=xml';
+	}
+	
 	this.counter++;
-	// TODO : cloner le document avant de faire ça ?
-	doc.getElementsByTagName('citizen')[0].setAttribute('key', webapp.key);
 	GM_xmlhttpRequest(new ixhr(webapp, doc));
 };
 
