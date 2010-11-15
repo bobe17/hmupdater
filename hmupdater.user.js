@@ -678,8 +678,7 @@ HMUpdater.sendData = function(webapp, doc) {
 	function ixhr(webapp, doc)
 	{
 		this.timer   = null;
-		this.method  = (doc != null) ? 'POST' : 'GET';
-		this.data    = doc;
+		this.method  = 'GET';
 		this.url     = webapp.url;
 		
 		/:\/\/([^\/]+)\//.test(this.url);
@@ -689,6 +688,18 @@ HMUpdater.sendData = function(webapp, doc) {
 			'X-Handler'  : HMU_APPNAME,
 			'User-Agent' : HMU_APPNAME + '/' + HMU_VERSION
 		};
+		
+		if( doc != null ) {
+			this.method = 'POST';
+			this.data   = doc;
+			
+			if( typeof(doc) == 'string' ) {
+				this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+			}
+			else {
+				this.headers['Content-Type'] = 'application/xml';
+			}
+		}
 		
 		this.onerror = function() {
 			console.log("Request to URL '" + this.url + "' failed");
