@@ -33,22 +33,31 @@ file_put_contents($filename, $content); chmod($filename, 0777);
 */
 
 $version = '1.0';
-if( preg_match('/<headers[^>]+version\s*=\s*("|\')([0-9]+\.[0-9]+)\\1/', $data, $match) ) {
-	$version = $match[1];
-}
-
-$charset = 'UTF-8';
-if( preg_match('/<\?xml[^>]+encoding\s*=\s*("|\')([^"\']+)\\1/', $data, $match) ) {
-	$charset = $match[2];
-}
-
 $headers = array();
+
+// xml mode
+if( preg_match('/^<(?:\?xml|hordes)/', $data) ) {
+	if( preg_match('/<headers[^>]+version\s*=\s*("|\')([0-9]+\.[0-9]+)\\1/', $data, $match) ) {
+		$version = $match[1];
+	}
+	
+	$charset = 'UTF-8';
+	if( preg_match('/<\?xml[^>]+encoding\s*=\s*("|\')([^"\']+)\\1/', $data, $match) ) {
+		$charset = $match[2];
+	}
+	
+	$headers['Content-Type']  = sprintf('application/xml; charset=%s', $charset);
+}
+// raw mode
+else {
+	$headers['Content-Type']  = 'application/x-www-form-urlencoded';
+}
+
 $headers['Date']          = gmdate(DATE_RFC1123);
 $headers['Accept']        = 'text/xml,application/xml,text/html,text/plain,*/*';
 $headers['X-Handler']     = 'HMUpdater';
 $headers['User-Agent']    = sprintf('HMUpdater/%s via Webnaute.Hordes.Proxy/1.0', $version);
 $headers['Cache-Control'] = 'no-cache';
-$headers['Content-Type']  = sprintf('application/xml; charset=%s', $charset);
 
 $headers_txt = '';
 foreach( $headers as $name => $value ) {
