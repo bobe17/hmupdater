@@ -217,7 +217,7 @@ HMUpdater.initialize = function() {
 	var root = document.createElement('div');
 	root.setAttribute('id', 'hmupdater');
 	root.setAttribute('title', 'Cliquez pour configurer le script');
-	root.innerHTML = '<strong class="hmu:class:box">HMUpdater</strong>';
+	root.innerHTML = '<strong class="hmu:class:box">'+HMU_APPNAME+'</strong>';
 	root.firstChild.addEventListener('click', function() {
 		HMUpdater.form.toggle();
 	}, false);
