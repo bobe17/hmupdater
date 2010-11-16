@@ -679,7 +679,7 @@ HMUpdater.sendData = function(webapp, doc) {
 	function ixhr(webapp, doc)
 	{
 		this.timer   = null;
-		this.method  = 'GET';
+		this.method  = 'POST';
 		this.url     = webapp.url;
 		
 		/:\/\/([^\/]+)\//.test(this.url);
@@ -690,16 +690,15 @@ HMUpdater.sendData = function(webapp, doc) {
 			'User-Agent' : HMU_APPNAME + '/' + HMU_VERSION
 		};
 		
-		if( doc != null ) {
-			this.method = 'POST';
-			this.data   = doc;
-			
-			if( typeof(doc) == 'string' ) {
-				this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
-			}
-			else {
-				this.headers['Content-Type'] = 'application/xml';
-			}
+		if( webapp.xml == false ) {
+			this.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+			this.data = 'key='+webapp.key+'&mode=xml';
+		}
+		else {
+			this.headers['Content-Type'] = 'application/xml';
+			// TODO : cloner le document avant de faire ça ?
+			doc.getElementsByTagName('citizen')[0].setAttribute('key', webapp.key);
+			this.data = doc;
 		}
 		
 		this.onerror = function() {
@@ -723,17 +722,23 @@ HMUpdater.sendData = function(webapp, doc) {
 			if( responseDetails.status == 200 ) {
 				var code = message = null;
 				
-				try {
-					var doc = new DOMParser().parseFromString(responseDetails.responseText, 'application/xml');
-					var error = doc.getElementsByTagName('error')[0];
-					
-					code = error.getAttribute('code');
-					message = error.textContent.replace(/</g, '&lt;');
+				if( webapp.xml == true ) {
+					try {
+						var doc = new DOMParser().parseFromString(responseDetails.responseText, 'application/xml');
+						var error = doc.getElementsByTagName('error')[0];
+						
+						code = error.getAttribute('code');
+						message = error.textContent.replace(/</g, '&lt;');
+					}
+					catch(e) {
+						message = 'Erreur inattendue';
+						console.log(e.name + ' : ' + e.message);
+						code = 'error';
+					}
 				}
-				catch(e) {
-					message = 'Erreur inattendue';
-					console.log(e.name + ' : ' + e.message);
-					code = 'error';
+				else {
+					// TODO ?
+					code = 'ok';
 				}
 				
 				if( code == 'ok' ) {
@@ -764,14 +769,6 @@ HMUpdater.sendData = function(webapp, doc) {
 		// le bon objet xhr dans la fonction anonyme du setTimeout
 		var xhr = this;
 		this.timer = setTimeout(function() {xhr.onerror();}, (HMU_TIMEOUT * 1000));
-	}
-	
-	if( webapp.xml == true ) {
-		// TODO : cloner le document avant de faire ça ?
-		doc.getElementsByTagName('citizen')[0].setAttribute('key', webapp.key);
-	}
-	else {
-		doc = 'key='+webapp.key+'&mode=xml';
 	}
 	
 	this.counter++;
