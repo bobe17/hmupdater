@@ -97,7 +97,7 @@ if( !GM_AVAILABLE ) {
 	GM_xmlhttpRequest = function(xhr) {
 		console.log('Call to non-native GM_xmlhttpRequest()');
 		
-		var data = (xhr.data != 'string') ?
+		var data = (typeof(xhr.data) != 'string') ?
 			new XMLSerializer().serializeToString(xhr.data) : xhr.data;
 		
 		var img = document.createElement('img');
