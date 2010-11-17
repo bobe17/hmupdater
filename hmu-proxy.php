@@ -18,25 +18,24 @@ error_reporting(0);
 $url  = !empty($_GET['url']) ? trim($_GET['url']) : '';
 $data = !empty($_GET['data']) ? trim($_GET['data']) : '';
 
-if( !preg_match('#^[a-z][a-z0-9+.-]*://[^\s<>"{}|\\^[\]`]+$#', $url) ) {
+if( !preg_match('#^[a-z][a-z0-9+.-]*://([a-zA-Z0-9._-]+)/[^\s<>"{}|\\^[\]`]*$#', $url, $match) ) {
 	header('Bad Request', true, 400);
 	echo "Your browser sent a request that this server could not understand.";
 	exit;
 }
-
 /*
+$filename = 'trace/'.$match[1].':%s:'.date('Y-m-d_H:i:s').'.dat';
+
 $content  = sprintf("url: %s\n", $url);
 $content .= sprintf("data: %s\n", $data);
-
-$filename = 'trace/'.date('Y-m-d_H:i:s').'.data';
-file_put_contents($filename, $content); chmod($filename, 0777);
+file_put_contents(sprintf($filename, 'request'), $content);
 */
-
 $version = '1.0';
 $headers = array();
 
 // xml mode
 if( preg_match('/^<(?:\?xml|hordes)/', $data) ) {
+	$xml_mode = true;
 	if( preg_match('/<headers[^>]+version\s*=\s*("|\')([0-9]+\.[0-9]+)\\1/', $data, $match) ) {
 		$version = $match[1];
 	}
@@ -50,6 +49,7 @@ if( preg_match('/^<(?:\?xml|hordes)/', $data) ) {
 }
 // raw mode
 else {
+	$xml_mode = false;
 	$headers['Content-Type']  = 'application/x-www-form-urlencoded';
 }
 
@@ -75,12 +75,14 @@ $context = stream_context_create(array(
 
 $data = file_get_contents($url, false, $context);
 
+//file_put_contents(sprintf($filename, 'response'), $data);
+
 //
 // Traitement de la réponse
 //
 $errorCode = 2;
 
-if( $data !== false ) {
+if( $xml_mode && $data !== false ) {
 	$doc = new DOMDocument();
 	if( $doc->loadXML($data) ) {
 		$xpath  = new DOMXPath($doc);
@@ -90,6 +92,10 @@ if( $data !== false ) {
 			$errorCode = 1;
 		}
 	}
+}
+
+if( !$xml_mode ) {
+	$errorCode = 1;
 }
 
 //
