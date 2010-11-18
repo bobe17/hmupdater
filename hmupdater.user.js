@@ -197,22 +197,22 @@ HMUpdater.initialize = function() {
 	//
 	// Bouton "HMUpdater"
 	//
-	HMUpdater.addStyle('#hmupdater { display:none; position:fixed; right:5px; bottom:5px; z-index:1000; border:2px solid black; }');
-	HMUpdater.addStyle('.hmu\\:class\\:box { border:1px solid #DDAB76; padding:5px 10px; color:inherit; background-color:#5c2b20; }');
-	HMUpdater.addStyle('#hmupdater strong { display:block; width:8.5em; text-align:center; cursor:pointer; color:#f0d79e; }');
-	HMUpdater.addStyle('#hmupdater strong:hover { text-shadow: 0 0 3px rgba(255,255,255,0.8); }');
+	this.addStyle('#hmupdater { display:none; position:fixed; right:5px; bottom:5px; z-index:1000; border:2px solid black; }');
+	this.addStyle('.hmu\\:class\\:box { border:1px solid #DDAB76; padding:5px 10px; color:inherit; background-color:#5c2b20; }');
+	this.addStyle('#hmupdater strong { display:block; width:8.5em; text-align:center; cursor:pointer; color:#f0d79e; }');
+	this.addStyle('#hmupdater strong:hover { text-shadow: 0 0 3px rgba(255,255,255,0.8); }');
 	
 	// Formulaire de coordonnées
-	HMUpdater.addStyle('#hmu\\:coords { display:none; position:absolute; z-index:2;' +
+	this.addStyle('#hmu\\:coords { display:none; position:absolute; z-index:2;' +
 		'width:260px; margin-top:-40px; margin-left:5px; padding:4px; font-size:8pt;' +
 		'background-color:#3B3249; border:1px solid #AFACC1; outline:2px solid black; }');
-	HMUpdater.addStyle('#hmu\\:coords p { background-color:#696486; margin-bottom:0; padding:0 3px; text-align:left; }');
-	HMUpdater.addStyle('#hmu\\:coords .field { display:block; margin:15px auto; }');
-	HMUpdater.addStyle('#hmu\\:coords .button { width:125px;float:left;text-align:center; }');
-	HMUpdater.addStyle('#hmu\\:coords .button + .button { float:right; }');
+	this.addStyle('#hmu\\:coords p { background-color:#696486; margin-bottom:0; padding:0 3px; text-align:left; }');
+	this.addStyle('#hmu\\:coords .field { display:block; margin:15px auto; }');
+	this.addStyle('#hmu\\:coords .button { width:125px;float:left;text-align:center; }');
+	this.addStyle('#hmu\\:coords .button + .button { float:right; }');
 	
 	// Bouton de mise à jour
-	HMUpdater.addStyle('#hmu\\:link * { vertical-align:middle; }');
+	this.addStyle('#hmu\\:link * { vertical-align:middle; }');
 	
 	var root = document.createElement('div');
 	root.setAttribute('id', 'hmupdater');
@@ -288,7 +288,7 @@ HMUpdater.initialize = function() {
 	}, false);
 	
 	// Refresh initial
-	HMUpdater.refresh('init');
+	this.refresh('init');
 };
 
 HMUpdater.refresh = function(step) {
@@ -479,7 +479,7 @@ HMUpdater.updateMap = function() {
 		}
 	}
 	
-	HMUpdater.isMultipleUpdate = (updateCount > 1);
+	this.isMultipleUpdate = (updateCount > 1);
 	
 	var displayConfigPanel = false;
 	displayConfigPanel = (updateCustom == true && (pubkey == '' || postdata_url == ''));
