@@ -964,10 +964,13 @@ HMUpdater.form = {
 			'left:0; right:0; margin:auto; width:550px; outline:2px solid black; padding:5px; border-color:#b37c4a; }');
 		HMUpdater.addStyle('#hmu\\:form .form { width:auto; margin:0; padding:5px; }');
 		HMUpdater.addStyle('#hmu\\:form .row label { display:inline-block; float:none;' +
-			'width:200px; height:auto; margin: 2px 6px 2px 0; padding-left:2px; line-height: 1.4; cursor:pointer; }');
-		HMUpdater.addStyle('#hmu\\:form .row.checkbox label { width:260px; vertical-align: middle; white-space:nowrap; }');
-		HMUpdater.addStyle('#hmu\\:form .row.checkbox label * { vertical-align: middle; }');
-		HMUpdater.addStyle('#hmu\\:form .row.checkbox input { margin:1px; }');
+			'width:200px; height:auto; margin: 2px 6px 2px 0; padding-left:4px; line-height: 1.3; cursor:pointer; }');
+		HMUpdater.addStyle('#hmu\\:form .checkboxList label { width:252px; vertical-align: middle; white-space:nowrap; }');
+		HMUpdater.addStyle('#hmu\\:form .checkboxList label * { vertical-align: middle; }');
+		HMUpdater.addStyle('#hmu\\:form .checkbox + input[type="checkbox"] { display:none; }');
+		HMUpdater.addStyle('#hmu\\:form .checkbox { background-color:#F0D79E; border:1px solid #DDAB76;' +
+			'outline:1px solid black;width:10px;height:10px;display:inline-block;');
+		HMUpdater.addStyle('#hmu\\:form .checkbox.on { background-color:#965C36; }');
 		HMUpdater.addStyle('#hmu\\:form .special { min-height:0;margin:8px 2px 10px; padding-left:20px;' +
 			'background:transparent url("'+imageList['small_move']+'") no-repeat center left; }');
 		HMUpdater.addStyle('#hmu\\:form a.toolAction { text-decoration:underline; }');
@@ -975,15 +978,15 @@ HMUpdater.form = {
 		
 		var checkboxList = '';
 		for( var name in webapps ) {
-			checkboxList += '<label><input type="checkbox" id="hmu:choice:'+name+'"> <span>Mettre à jour ' + webapps[name].label + '</span></label>';
+			checkboxList += '<label><span class="checkbox"></span><input type="checkbox" id="hmu:choice:'+name+'"> <span>Mettre à jour ' + webapps[name].label + '</span></label>';
 		}
 		
 		this.html = document.createElement('div');
 		this.html.setAttribute('id', 'hmu:form');
 		this.html.innerHTML = '<div class="hmu:class:box"><form action="#" class="form">' +
-'<div class="row checkbox">' + checkboxList + '</div>' +
-'<div class="row checkbox">' +
-'<label><input type="checkbox" id="hmu:choice:custom"> <span>Spécifier une autre URL</span></label>' +
+'<div class="row checkboxList">' + checkboxList + '</div>' +
+'<div class="row checkboxList">' +
+'<label><span class="checkbox"></span><input type="checkbox" id="hmu:choice:custom"> <span>Spécifier une autre URL</span></label>' +
 '<a class="helpLink" onmouseout="js.HordeTip.hide()" onmouseover="js.HordeTip.showHelp(this,\'Vous pouvez également spécifier plusieurs URLs en les séparant avec une barre verticale (|). Les données seront alors envoyées à chaque URL.\');document.getElementById(\'tooltip\').style.zIndex = 1003;" onclick="return false;" href="#">' +
 '<img alt="Aide" src="'+imageList['help']+'"/></a>' +
 '</div><div class="row">' +
@@ -1019,6 +1022,34 @@ HMUpdater.form = {
 		
 		if( updateCustom == false ) {
 			$('hmu:custom:infos').style.display = 'none';
+		}
+		
+		// Ajout des guetteurs sur les <label> contenant un span.checkbox
+		var spanList = $xpath('//span[@class="checkbox"]', this.html, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
+		for( var i = 0, span = null, input = null, m = spanList.snapshotLength; i < m; i++ ) {
+			
+			span  = spanList.snapshotItem(i);
+			input = span.nextSibling;
+			
+			span.toggle = function(bool) {
+				this.className = 'checkbox ' + (bool ? 'on' : 'off');
+			};
+			
+			// Récupérer notre span, avec evt.currentTarget par exemple, ne conviendrait
+			// pas. Du fait du système de sandbox de greasemonkey, le span ainsi récupéré
+			// ne possèderait pas la méthode toggle() définie plus haut.
+			// Au lieu de cela, on utilise une fermeture pour "capturer" notre span.
+			// Un peu "compliqué", mais pour le plaisir d’utiliser une fermeture...
+			span.parentNode.addEventListener('click', (function(span) {
+				return function() {
+					var input = span.nextSibling;// input[type="checkbox"]
+					input.checked  = !input.checked;
+					span.toggle(input.checked);
+				};
+			})(span), false);
+			
+			// 'Valeur' initiale du span.checkbox
+			span.toggle(input.checked);
 		}
 		
 		$('hmu:login').value  = login;
