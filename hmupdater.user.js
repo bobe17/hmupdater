@@ -182,7 +182,6 @@ var HMUpdater = {
 	styleSheet: null,
 	lock: false,
 	error: false,
-	counter: 0,
 	vars: {
 		dried: -1,
 		days: -1,
@@ -474,6 +473,7 @@ HMUpdater.updateMap = function() {
 		webapps[name].update = Boolean(GM_getArrayValue('update'+name, login, false));
 		
 		if( webapps[name].update == true ) {
+			webapps[name].done = false;
 			updateWebapp = true;
 			updateCount++;
 		}
@@ -705,7 +705,9 @@ HMUpdater.sendData = function(webapp, doc) {
 			console.log("Request to URL '" + this.url + "' failed");
 			
 			clearTimeout(this.timer);
+			webapp.done = true;
 			this.onload = function(){};
+			
 			HMUpdater.message.error("Le site <strong>" + this.host + "</strong> ne répond pas\u00A0!");
 			HMUpdater.finishUpdate();
 		};
@@ -714,6 +716,7 @@ HMUpdater.sendData = function(webapp, doc) {
 			console.log("Request to URL '" + this.url + "'");
 			
 			clearTimeout(this.timer);
+			webapp.done = true;
 			
 			var target = '<strong>';
 			target += (webapp.id != null) ? webapp.label : this.host;
@@ -771,13 +774,20 @@ HMUpdater.sendData = function(webapp, doc) {
 		this.timer = setTimeout(function() {xhr.onerror();}, (HMU_TIMEOUT * 1000));
 	}
 	
-	this.counter++;
 	GM_xmlhttpRequest(new ixhr(webapp, doc));
 };
 
 HMUpdater.finishUpdate = function() {
-	this.counter--;
-	if( this.counter == 0 ) {
+	
+	var displayMessage = true;
+	for( var name in webapps ) {
+		if( webapps[name].update && !webapps[name].done ) {
+			displayMessage = false;
+			break;
+		}
+	}
+	
+	if( displayMessage ) {
 		console.log('Update action finished');
 		// On masque l'image de chargement
 		$('loading_section').style.display = 'none';
