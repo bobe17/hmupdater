@@ -51,6 +51,8 @@ imageList["map"]  = "http://data.hordes.fr/gfx/icons/r_explor.gif";
 imageList["warning"]    = "http://www.hordes.fr/gfx/forum/smiley/h_warning.gif";
 imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
 imageList["anchor"]     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAQAgMAAACXY5xCAAAAAXNSR0IArs4c6QAAAAlQTFRFHQgQXCsg3at2dnylcgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAABLSURBVAjXLcqxDcAgDETRjxRlB7ZhiSClN8yThn3DnXHh+8VjPT4Y3t6ojhduR0Ax+ki0CUabJAqFkIiQiZCJUGSUlQRmO1HPcun9kAcXQ2R1ivMAAAAASUVORK5CYII=";
+imageList['tickOn']     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMBAMAAACgrpHpAAAAAXNSR0IArs4c6QAAAA9QTFRFZXQtm5ubgICA0+uIAAAAuS1B0AAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAAA+SURBVAjXJcnBEQAhCEPRHLYBtwRbkAIU0n9NhvgPvMkAdPTFF8+SVGvLnD1Rb4JRYWtlmwx7yGP/OfxX8gLtpgvbL+3EgQAAAABJRU5ErkJggg==";
+imageList['tickOff']    = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMAgMAAAAv7mRJAAAAAXNSR0IArs4c6QAAAAlQTFRFAABn////AAAAPdfxGgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAiSURBVAjXY2BABatWNTAwTA0FErNWAokZnCgEWAwsC1IHADVYDWZWHqBeAAAAAElFTkSuQmCC";
 
 // Si le debug mode n'est pas actif, on écrase l'objet console natif
 if( typeof(console) == 'undefined' ) {// au cas où...
@@ -964,13 +966,14 @@ HMUpdater.form = {
 			'left:0; right:0; margin:auto; width:550px; outline:2px solid black; padding:5px; border-color:#b37c4a; }');
 		HMUpdater.addStyle('#hmu\\:form .form { width:auto; margin:0; padding:5px; }');
 		HMUpdater.addStyle('#hmu\\:form .row label { display:inline-block; float:none;' +
-			'width:200px; height:auto; margin: 2px 6px 2px 0; padding-left:4px; line-height: 1.3; cursor:pointer; }');
-		HMUpdater.addStyle('#hmu\\:form .checkboxList label { width:252px; vertical-align: middle; white-space:nowrap; }');
+			'width:200px; height:auto; margin: 2px 10px 2px 0; padding-left:5px; line-height: 1.3; cursor:pointer; }');
+		HMUpdater.addStyle('#hmu\\:form .checkboxList label { width:242px; vertical-align:middle;white-space:nowrap;' +
+			'background-repeat: no-repeat; background-position: 5px 3px; padding-left:20px; }');
+		HMUpdater.addStyle('#hmu\\:form .checkboxList label:nth-of-type(even) { margin-right: 0; }');
+		HMUpdater.addStyle('#hmu\\:form .checkboxList label.on { background-image: url("'+imageList['tickOn']+'"); }');
+		HMUpdater.addStyle('#hmu\\:form .checkboxList label.off { background-image: url("'+imageList['tickOff']+'"); }');
 		HMUpdater.addStyle('#hmu\\:form .checkboxList label * { vertical-align: middle; }');
 		HMUpdater.addStyle('#hmu\\:form .checkboxList input[type="checkbox"] { display:none; }');
-		HMUpdater.addStyle('#hmu\\:form .checkbox { background-color:#F0D79E; border:1px solid #DDAB76;' +
-			'outline:1px solid black;width:10px;height:10px;display:inline-block; }');
-		HMUpdater.addStyle('#hmu\\:form .checkbox.on { background-color:#965C36; }');
 		HMUpdater.addStyle('#hmu\\:form .special { min-height:0;margin:8px 2px 10px; padding-left:20px;' +
 			'background:transparent url("'+imageList['small_move']+'") no-repeat center left; }');
 		HMUpdater.addStyle('#hmu\\:form a.toolAction { text-decoration:underline; }');
@@ -978,7 +981,7 @@ HMUpdater.form = {
 		
 		var checkboxList = '';
 		for( var name in webapps ) {
-			checkboxList += '<input type="checkbox" id="hmu:choice:'+name+'"><label><span class="checkbox"></span> <span>Mettre à jour ' + webapps[name].label + '</span></label>';
+			checkboxList += '<input type="checkbox" id="hmu:choice:'+name+'"><label><span>Mettre à jour ' + webapps[name].label + '</span></label>';
 		}
 		
 		this.html = document.createElement('div');
@@ -986,7 +989,7 @@ HMUpdater.form = {
 		this.html.innerHTML = '<div class="hmu:class:box"><form action="#" class="form">' +
 '<div class="row checkboxList">' + checkboxList + '</div>' +
 '<div class="row checkboxList">' +
-'<input type="checkbox" id="hmu:choice:custom"><label><span class="checkbox"></span> <span>Spécifier une autre URL</span></label>' +
+'<input type="checkbox" id="hmu:choice:custom"><label><span>Spécifier une autre URL</span></label>' +
 '<a class="helpLink" onmouseout="js.HordeTip.hide()" onmouseover="js.HordeTip.showHelp(this,\'Vous pouvez également spécifier plusieurs URLs en les séparant avec une barre verticale (|). Les données seront alors envoyées à chaque URL.\');document.getElementById(\'tooltip\').style.zIndex = 1003;" onclick="return false;" href="#">' +
 '<img alt="Aide" src="'+imageList['help']+'"/></a>' +
 '</div><div class="row">' +
@@ -1024,36 +1027,36 @@ HMUpdater.form = {
 			$('hmu:custom:infos').style.display = 'none';
 		}
 		
-		// Ajout des guetteurs sur les <label> contenant un span.checkbox
-		var spanList = $xpath('//span[@class="checkbox"]', this.html, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
-		for( var i = 0, span = null, input = null, m = spanList.snapshotLength; i < m; i++ ) {
+		// Ajout des guetteurs sur les <label> des div.checkboxList
+		var labelList = $xpath('//div[@class="row checkboxList"]/label', this.html, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE);
+		for( var i = 0, label = null, input = null, m = labelList.snapshotLength; i < m; i++ ) {
 			
-			span  = spanList.snapshotItem(i);
-			input = span.parentNode.previousSibling;// input[type="checkbox"]
+			label = labelList.snapshotItem(i);
+			input = label.previousSibling;// input[type="checkbox"]
 			
-			span.toggle = function(bool) {
-				this.className = 'checkbox ' + (bool ? 'on' : 'off');
+			label.toggle = function(bool) {
+				this.className = bool ? 'on' : 'off';
 			};
 			
-			// Récupérer notre span, via evt.currentTarget par exemple, ne conviendrait
-			// pas. Du fait du système de sandbox de greasemonkey, le span ainsi récupéré
+			// Récupérer notre label, via evt.currentTarget par exemple, ne conviendrait
+			// pas. Du fait du système de sandbox de greasemonkey, le label ainsi récupéré
 			// ne possèderait pas la méthode toggle() définie plus haut.
-			// Au lieu de cela, on utilise une fermeture pour "capturer" nos span et input.
+			// Au lieu de cela, on utilise une fermeture pour "capturer" nos label et input.
 			// Un peu "compliqué", mais pour le plaisir d’utiliser une fermeture...
-			span.parentNode.addEventListener('click', (function(span, input) {
+			label.addEventListener('click', (function(label, input) {
 				return function() {
 					input.checked  = !input.checked;
-					span.toggle(input.checked);
+					label.toggle(input.checked);
 					
 					if( input.getAttribute('id') == 'hmu:choice:custom' ) {
 						$('hmu:custom:infos').style.display =
 							input.checked ? 'block' : 'none';
 					}
 				};
-			})(span, input), false);
+			})(label, input), false);
 			
 			// 'Valeur' initiale du span.checkbox
-			span.toggle(input.checked);
+			label.toggle(input.checked);
 		}
 		
 		$('hmu:login').value  = login;
