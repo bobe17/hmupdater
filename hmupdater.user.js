@@ -873,7 +873,7 @@ HMUpdater.message = {
 	hide: function() {
 		this.html.style.opacity = 0;
 		// Crade mais les transitions events, c'est pas encore d'actualité...
-		setTimeout(function(){
+		this.timer = setTimeout(function(){
 			HMUpdater.message.clear();
 		}, 1600);
 	},
