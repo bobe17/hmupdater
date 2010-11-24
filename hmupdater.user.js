@@ -841,7 +841,7 @@ HMUpdater.message = {
 		}
 		
 		if( message != null && this.delay >= 0 ) {
-			var line = document.createElement('div');
+			var line = document.createElement('li');
 			line.innerHTML = message;
 			this.html.firstChild.appendChild(line);
 			this.delay += (arguments.length > 1 && arguments[1] != null) ? arguments[1] : this.defaultDelay;
@@ -889,16 +889,17 @@ HMUpdater.message = {
 			'box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8); -moz-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8); -webkit-box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.8);' +
 			'display:none; position:fixed; bottom:3.4em; right:2.4em;' +
 			'z-index:1001; min-width:250px; max-width:500px; text-align:left;' +
-			'border-radius:8px; -moz-border-radius:8px; font-family:"Bitstream Vera Sans",Verdana,sans-serif;}');
+			'border-radius:8px; -moz-border-radius:8px; font-family:"DejaVu Sans","Bitstream Vera Sans",Verdana,sans-serif;}');
 		HMUpdater.addStyle('#hmu\\:message img.error { vertical-align:bottom; margin-right:3px; margin-bottom:-1px; }');
 		HMUpdater.addStyle('#hmu\\:message img.pointer { position:absolute; right:25px; bottom:-16px; }');
 		HMUpdater.addStyle('#hmu\\:message strong { color:#EDCDA9 }');
-		HMUpdater.addStyle('#hmu\\:message div div:not(:first-child) { border-top:1px solid #DDAB76; margin-top:4px; padding-top:2px; }');
+		HMUpdater.addStyle('#hmu\\:message ul { margin:0; padding:0; list-style:none; line-height:1.35; }');
+		HMUpdater.addStyle('#hmu\\:message li:not(:first-child) { border-top:1px solid #DDAB76; margin-top:3px; padding-top:3px; }');
 		
 		this.html = document.createElement('div');
 		this.html.setAttribute('id', 'hmu:message');
 		this.html.setAttribute('class', 'hmu:class:box');
-		this.html.appendChild(document.createElement('div'));
+		this.html.appendChild(document.createElement('ul'));
 		
 		var image = document.createElement('img');
 		image.setAttribute('alt', '');
