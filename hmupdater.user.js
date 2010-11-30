@@ -17,12 +17,12 @@
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour d'une M@p d'objets à partir de hordes.fr
 // @include        http://www.hordes.fr/*
-// @version        1.5
+// @version        1.6
 // ==/UserScript==
 
 (function(){
 
-const HMU_VERSION  = '1.5';
+const HMU_VERSION  = '1.6';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -402,16 +402,20 @@ HMUpdater.refresh = function(step) {
 	//
 	// Infos sur la ville
 	//
-	if( $('mapInfos') != null ) {
-		this.vars['cityname'] = $('mapInfos').firstChild.data.trim();
+	if( $('clock') != null ) {
+		this.vars['cityname'] = $xpath('./div[@class="name"]', $('clock'),
+			XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue.textContent.trim();
 		
-		if( /Jour\s+([0-9]+),/.test($('mapInfos').textContent) ) {
+		var days = $xpath('./div[@class="day"]', $('clock'),
+			XPathResult.ANY_UNORDERED_NODE_TYPE).singleNodeValue.textContent;
+		
+		if( /Jour\s+([0-9]+)/.test(days) ) {
 			this.vars['days'] = RegExp.$1;
 		}
 		
 		// Pandémonium ?
 		if( this.vars['hardcore'] == null ) {
-			this.vars['hardcore'] = $xpath('span[@class="hardcore"]', $('mapInfos'),
+			this.vars['hardcore'] = $xpath('.//span[@class="hard"]', $('clock'),
 				XPathResult.BOOLEAN_TYPE).booleanValue;
 			if( this.vars['hardcore'] ) {
 				console.log('Hardcore Mode detected - Restriction on data sent');
@@ -419,7 +423,7 @@ HMUpdater.refresh = function(step) {
 		}
 	}
 	else {
-		console.warn('#mapInfos node doesn\'t exist (??)');
+		console.warn('#clock node doesn\'t exist (??)');
 	}
 	
 	//
