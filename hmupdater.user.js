@@ -17,12 +17,12 @@
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour d'une M@p d'objets à partir de hordes.fr
 // @include        http://www.hordes.fr/*
-// @version        1.6
+// @version        1.7
 // ==/UserScript==
 
 (function(){
 
-const HMU_VERSION  = '1.6';
+const HMU_VERSION  = '1.7';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -43,6 +43,33 @@ webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'B
 webapps['HUM']     = { id: 36, url: 'http://www.hordes-ultimate-manager.net/hmupdater/index.php', label: 'Ultimate Manager', key: null, xml: true };
 webapps['LCN']     = { id: 14, url: 'http://www.lacitadellenoire.com/carte.php', label: 'La Citadelle Noire', key: null, xml: false };
 webapps['OEEV']    = { id: 22, url: 'http://www.oeev-hordes.com/', label: 'OEEV', key: null, xml: false };
+
+// Localisation
+var lang = {};
+lang['root_title']   = "Cliquez pour configurer le script";// tooltip of root button
+lang['new_version']  = "Une nouvelle version du script est disponible en $1téléchargement$2.\nVotre version peut ne plus fonctionner correctement, vous devriez faire cette mise à jour (Pensez ensuite à recharger cette page).";
+lang['coords_text']  = "Saisissez les coordonnées de la case (format\u00A0: x.y)";// \u00A0 = non-break space
+lang['coords_error'] = "Mauvais format de coordonnées\u00A0! (formats acceptés\u00A0: x.y ou x,y)";
+
+lang['update_button'] = "Mettre à jour la M@p";
+lang['update_error1'] = "Le site $1 ne répond pas\u00A0!";// $1 = webapp
+lang['update_error2'] = "Erreur inattendue";
+lang['update_error3'] = "Erreur renvoyée par $1\u00A0: $2";// $1 = webapp, $2 = message returned by the webapp
+lang['update_error4'] = "Erreur HTTP renvoyée par $1\u00A0: $2";// $1 = webapp, $2 = http response (eg: "404 Not Found")
+lang['update_ok1']    = "La M@p a été mise à jour\u00A0!";
+lang['update_ok2']    = "La M@p a été mise à jour sur $1\u00A0!";// $1 = webapp
+
+lang['checkbox_webapp'] = "Mettre à jour $1";
+lang['checkbox_custom'] = "Spécifier une autre URL";
+lang['custom_tooltip']  = "Vous pouvez également spécifier plusieurs URLs en les séparant avec une barre verticale (|). Les données seront alors envoyées à chaque URL.";
+lang['input_login']     = "Votre pseudo";
+lang['input_url']       = "URL de l’application externe";
+lang['input_pubkey']    = "Votre clef API";
+lang['reset_coords']    = "Réinitialiser les coordonnées";
+lang['valid_button']    = "Valider";
+lang['cancel_button']   = "Annuler";
+lang['save_button']     = "Enregistrer les informations";
+lang['config_ok']       = "La configuration a été sauvegardée";
 
 // Images utilisées dans le code HTML généré par le script
 var imageList = new Array();
@@ -179,6 +206,19 @@ function $xpath(expression, contextNode, type)
 		.evaluate(expression, contextNode, null, type, null);
 }
 
+function getLang(key)
+{
+	var str = lang[key].replace(/\n/g, '<br>');
+	
+	if( arguments.length > 1 ) {
+		for(var i = 1, m = arguments.length; i < m; i++ ) {
+			str = str.replace('$'+String(i), arguments[i]);
+		}
+	}
+	
+	return str;
+}
+
 var HMUpdater = {
 	mainNode: null,
 	styleSheet: null,
@@ -217,7 +257,7 @@ HMUpdater.initialize = function() {
 	
 	var root = document.createElement('div');
 	root.setAttribute('id', 'hmupdater');
-	root.setAttribute('title', 'Cliquez pour configurer le script');
+	root.setAttribute('title', getLang('root_title'));
 	root.innerHTML = '<strong class="hmu:class:box">'+HMU_APPNAME+'</strong>';
 	root.firstChild.addEventListener('click', function() {
 		HMUpdater.form.toggle();
@@ -323,11 +363,7 @@ HMUpdater.refresh = function(step) {
 		
 		if( this.checkVersion($('hmupdater').getAttribute('hmu:last-version')) == true ) {
 			this.message.clear();
-			this.message.show("Une nouvelle version du script est disponible " +
-				"en <a href='" + HMU_APPHOME + "'>téléchargement</a>.<br>" +
-				"Votre version peut ne plus fonctionner correctement, " +
-				"vous devriez faire cette mise à jour " +
-				"(Pensez ensuite à recharger cette page).", -1);
+			this.message.show(getLang('new_version', '<a href="' + HMU_APPHOME + '">', '</a>'), -1);
 		}
 	}
 	
@@ -358,10 +394,10 @@ HMUpdater.refresh = function(step) {
 	var coordsForm = document.createElement('form');
 	coordsForm.setAttribute('action', '#');
 	coordsForm.setAttribute('id', 'hmu:coords');
-	coordsForm.innerHTML = '<p>Saisissez les coordonnées de la case (format\u00A0: x.y)</p>' +
+	coordsForm.innerHTML = '<p>'+getLang('coords_text')+'</p>' +
 		'<input type="text" name="coords" class="field"/>' +
-		'<input type="submit" value="Valider" class="button"/>' +
-		'<input type="reset" value="Annuler" class="button"/>';
+		'<input type="submit" value="'+getLang('valid_button')+'" class="button"/>' +
+		'<input type="reset" value="'+getLang('cancel_button')+'" class="button"/>';
 	coordsForm.addEventListener('submit', function(evt) {
 		evt.preventDefault();
 		var coords = this.elements.namedItem('coords').value.trim();
@@ -373,7 +409,7 @@ HMUpdater.refresh = function(step) {
 		}
 		else {
 			HMUpdater.message.clear();
-			HMUpdater.message.show("Mauvais format de coordonnées\u00A0! (formats acceptés\u00A0: x.y ou x,y)", 6);
+			HMUpdater.message.show(getLang('coords_error'), 6);
 		}
 	}, false);
 	coordsForm.addEventListener('reset', function(evt) {
@@ -387,7 +423,7 @@ HMUpdater.refresh = function(step) {
 	updateButton.setAttribute('id',    'hmu:link');
 	updateButton.setAttribute('class', 'button');
 	updateButton.setAttribute('href',  '#outside/hmupdater');
-	updateButton.innerHTML = '<img alt="" src="'+imageList['map']+'"/> <span>Mettre à jour la M@p</span>';
+	updateButton.innerHTML = '<img alt="" src="'+imageList['map']+'"/> <span>'+getLang('update_button')+'</span>';
 	updateButton.lastChild.appendChild(document.createTextNode(this.coords.get() != null ? ' ('+this.coords.get()+')' : ''));
 	updateButton.addEventListener('click', function(evt) {
 		evt.preventDefault();
@@ -714,7 +750,7 @@ HMUpdater.sendData = function(webapp, doc) {
 			webapp.done = true;
 			this.onload = function(){};
 			
-			HMUpdater.message.error("Le site <strong>" + this.host + "</strong> ne répond pas\u00A0!");
+			HMUpdater.message.error(getLang('update_error1', '<strong>'+this.host+'</strong>'));
 			HMUpdater.finishUpdate();
 		};
 		
@@ -740,7 +776,7 @@ HMUpdater.sendData = function(webapp, doc) {
 						message = error.textContent.replace(/</g, '&lt;');
 					}
 					catch(e) {
-						message = 'Erreur inattendue';
+						message = getLang('update_error2');
 						console.log(e.name + ' : ' + e.message);
 						code = 'error';
 					}
@@ -751,13 +787,11 @@ HMUpdater.sendData = function(webapp, doc) {
 				}
 				
 				if( code == 'ok' ) {
-					HMUpdater.message.show("La M@p a été mise à jour " +
-						(HMUpdater.coords.get() != null ? "en <strong>" + HMUpdater.coords.get() + "</strong>" : '') +
-						(HMUpdater.isMultipleUpdate == true ? ' sur ' + target : '') + "\u00A0!");
+					HMUpdater.message.show(HMUpdater.isMultipleUpdate == true ?
+						getLang('update_ok2', target) : getLang('update_ok1'));
 				}
 				else {
-					HMUpdater.message.error("Erreur renvoyée par " + target + '\u00A0: ' +
-						(message != null ? "<br/><em>" + message + "</em>" : ""),
+					HMUpdater.message.error(getLang('update_error3', target, (message != null ? "<br/><em>" + message + "</em>" : "")),
 						// Ajustement du délai avant de masquer la boite à message
 						(message != null ? message.length/10 : null)
 					);
@@ -767,7 +801,7 @@ HMUpdater.sendData = function(webapp, doc) {
 			}
 			else {
 				var httpResponse = responseDetails.status + ' ' + responseDetails.statusText;
-				HMUpdater.message.error("Erreur HTTP renvoyée par " + target + "\u00A0: " + httpResponse);
+				HMUpdater.message.error(getLang('update_error4', target, httpResponse));
 				console.log('Response : HTTP ' + httpResponse);
 			}
 			
@@ -986,7 +1020,7 @@ HMUpdater.form = {
 		
 		var checkboxList = '';
 		for( var name in webapps ) {
-			checkboxList += '<input type="checkbox" id="hmu:choice:'+name+'"><label><span>Mettre à jour ' + webapps[name].label + '</span></label>';
+			checkboxList += '<input type="checkbox" id="hmu:choice:'+name+'"><label><span>' + getLang('checkbox_webapp', webapps[name].label) + '</span></label>';
 		}
 		
 		this.html = document.createElement('div');
@@ -994,23 +1028,23 @@ HMUpdater.form = {
 		this.html.innerHTML = '<div class="hmu:class:box"><form action="#" class="form">' +
 '<div class="row checkboxList">' + checkboxList + '</div>' +
 '<div class="row checkboxList">' +
-'<input type="checkbox" id="hmu:choice:custom"><label><span>Spécifier une autre URL</span></label>' +
-'<a class="helpLink" onmouseout="js.HordeTip.hide()" onmouseover="js.HordeTip.showHelp(this,\'Vous pouvez également spécifier plusieurs URLs en les séparant avec une barre verticale (|). Les données seront alors envoyées à chaque URL.\');document.getElementById(\'tooltip\').style.zIndex = 1003;" onclick="return false;" href="#">' +
+'<input type="checkbox" id="hmu:choice:custom"><label><span>' + getLang('checkbox_custom') + '</span></label>' +
+'<a class="helpLink" onmouseout="js.HordeTip.hide()" onmouseover="js.HordeTip.showHelp(this,\'' + getLang('custom_tooltip').replace('\'', '\\\'') + '\');document.getElementById(\'tooltip\').style.zIndex = 1003;" onclick="return false;" href="#">' +
 '<img alt="Aide" src="'+imageList['help']+'"/></a>' +
 '</div><div class="row">' +
-'<label for="hmu:login">Votre pseudo&nbsp;:</label>' +
+'<label for="hmu:login">'+getLang('input_login')+'&nbsp;:</label>' +
 '<input type="text" id="hmu:login" class="field" size="35"/>' +
 '</div><div id="hmu:custom:infos">' +
 '<div class="row">' +
-'<label for="hmu:url">URL de l’application externe&nbsp;:</label>' +
+'<label for="hmu:url">'+getLang('input_url')+'&nbsp;:</label>' +
 '<input type="text" id="hmu:url" class="field" size="35"/>' +
 '</div><div class="row">' +
-'<label for="hmu:pubkey">Votre clef API&nbsp;:</label>' +
+'<label for="hmu:pubkey">'+getLang('input_pubkey')+'&nbsp;:</label>' +
 '<input type="text" id="hmu:pubkey" class="field" size="35"/>' +
 '</div><div class="row special">' +
-'<a id="hmu:erase" class="toolAction" href="#outside/hmupdater?do=erase.coords">Réinitialiser les coordonnées</a>' +
+'<a id="hmu:erase" class="toolAction" href="#outside/hmupdater?do=erase.coords">'+getLang('reset_coords')+'</a>' +
 '</div></div>' +
-'<input type="submit" value="Enregistrer les informations" class="button"/>' +
+'<input type="submit" value="'+getLang('save_button')+'" class="button"/>' +
 '</form></div>' +
 '<div class="black"></div>';
 		
@@ -1086,7 +1120,7 @@ HMUpdater.form = {
 			}
 			else {
 				HMUpdater.message.clear();
-				HMUpdater.message.show("La configuration a été sauvegardée");
+				HMUpdater.message.show(getLang('config_ok'));
 			}
 		}, false);
 	}
