@@ -26,7 +26,7 @@ const HMU_VERSION  = '1.7';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
-const HMU_CHECKVER = HMU_APPHOME + 'version?output=js';
+const HMU_CHECKVER = HMU_APPHOME + 'version?output=js';// null pour désactiver
 const DEBUG_MODE   = true;
 // pour les navigateurs qui ne supportent pas la fonction GM_xmlhttpRequest() native
 const PROXY_URL    = 'http://dev.webnaute.net/hordes/hmu-proxy.php';
@@ -265,11 +265,13 @@ HMUpdater.initialize = function() {
 	document.body.appendChild(root);
 	
 	// Check de version
-	var script = document.createElement('script');
-	script.setAttribute('id',   'hmu:script:last-version');
-	script.setAttribute('type', 'application/javascript');
-	script.setAttribute('src',  HMU_CHECKVER);
-	root.appendChild(script);
+	if( HMU_CHECKVER != null ) {
+		var script = document.createElement('script');
+		script.setAttribute('id',   'hmu:script:last-version');
+		script.setAttribute('type', 'application/javascript');
+		script.setAttribute('src',  HMU_CHECKVER);
+		root.appendChild(script);
+	}
 	
 	//
 	// On s'intercalle devant la méthode js.XmlHttp.onData() pour détecter les
