@@ -153,48 +153,6 @@ if( typeof("".trim) == 'undefined' ) {
 	}
 }
 
-function GM_getArrayValue(name, login, defaultValue)
-{
-	var array = {};
-	
-	try {
-		array = eval(GM_getValue(name, {}));
-	}
-	catch(e) {}
-	
-	return (login in array) ? array[login] : defaultValue;
-}
-
-function GM_setArrayValue(name, login, value)
-{
-	var array = {};
-	
-	try {
-		array = eval(GM_getValue(name, {}));
-	}
-	catch(e) {}
-	
-	array[login] = value;
-	
-	var str = '';
-	
-	if( typeof(array.toSource) == 'undefined' ) {
-		for( var index in array ) {
-			if( typeof(array[index]) != 'string' && typeof(array[index]) != 'boolean' ) continue;
-			
-			str += ', ' + index + ': ' +
-				(typeof(array[index]) == 'string' ? '"' + array[index] + '"' : array[index]);
-		}
-		
-		str = '({' + str.substr(1, str.length) + '})';
-	}
-	else {
-		str = array.toSource();
-	}
-	
-	GM_setValue(name, str);
-}
-
 //
 // Fonctions raccourcis
 //
@@ -229,6 +187,68 @@ var HMUpdater = {
 		days: -1,
 		hardcore: null,
 		cityname: 'Unknown'
+	}
+};
+
+HMUpdater.config = {
+	_default: {'pubkeys':'', 'postdata_urls':''},
+	
+	_getArray: function(name) {
+		var array = {};
+		
+		try {
+			array = eval(GM_getValue(name, {}));
+		}
+		catch(e) { console.error('Error while parsing the \''+name+'\' entry'); }
+		
+		return array;
+	},
+	get: function(name) {
+		var login = GM_getValue('login', '');
+		var array = null;
+		var value = '';
+		
+		if( name != 'login' && login != '' ) {
+			array = this._getArray(name);
+			value = (login in array) ? array[login] : (
+				typeof(this._default[name]) != 'undefined' ? this._default[name] : false
+			);
+		}
+		else {
+			value = login;
+		}
+		
+		return value;
+	},
+	set: function(name, value) {
+		var login = GM_getValue('login', '');
+		var array = null;
+		
+		if( typeof(value) == 'string' ) {
+			value = value.trim();
+		}
+		
+		if( name != 'login' && login != '' ) {
+			array = this._getArray(name);
+			array[login] = value;
+			
+			if( typeof(array.toSource) == 'undefined' ) {
+				value = '';
+				for( var index in array ) {
+					if( typeof(array[index]) != 'string' && typeof(array[index]) != 'boolean' ) continue;
+					
+					value += ', ' + index + ': ' +
+						(typeof(array[index]) == 'string' ? '"' + array[index] + '"' : array[index]);
+				}
+				
+				value = '({' + value.substr(1, value.length) + '})';
+			}
+			else {
+				value = array.toSource();
+			}
+		}
+		
+		GM_setValue(name, value);
 	}
 };
 
@@ -350,7 +370,7 @@ HMUpdater.refresh = function(step) {
 		//
 		if( $('hordes_login') != null ) {
 			$('hordes_login').addEventListener('submit', function() {
-				GM_setValue('login', this.elements.namedItem('login').value.trim());
+				HMUpdater.config.set('login', this.elements.namedItem('login').value);
 			}, false);
 		}
 		
@@ -502,10 +522,10 @@ HMUpdater.updateMap = function() {
 	//
 	// Récupération de la configuration
 	//
-	var login  = GM_getValue('login', '');
-	var pubkey = GM_getArrayValue('pubkeys', login, '');
-	var postdata_url = GM_getArrayValue('postdata_urls', login, '');
-	var updateCustom = Boolean(GM_getArrayValue('updateCustom', login, false));
+	var login  = this.config.get('login');
+	var pubkey = this.config.get('pubkeys');
+	var postdata_url = this.config.get('postdata_urls');
+	var updateCustom = this.config.get('updateCustom');
 	var updateWebapp = false;
 	var updateCount  = 0;
 	
@@ -514,7 +534,7 @@ HMUpdater.updateMap = function() {
 	}
 	
 	for( var name in webapps ) {
-		webapps[name].update = Boolean(GM_getArrayValue('update'+name, login, false));
+		webapps[name].update = this.config.get('update'+name);
 		
 		if( webapps[name].update == true ) {
 			webapps[name].done = false;
@@ -685,7 +705,7 @@ HMUpdater.updateMap = function() {
 	document.body.style.cursor = 'progress';
 	
 	for( name in webapps ) {
-		webapps[name].update = Boolean(GM_getArrayValue('update'+name, login, false));
+		webapps[name].update = this.config.get('update'+name);
 		
 		if( webapps[name].update == true ) {
 			this.sendData(webapps[name], doc);
@@ -980,11 +1000,11 @@ HMUpdater.form = {
 	},
 	validate: function() {
 		var login = $('hmu:login').value.trim();
-		GM_setValue('login', login);
+		HMUpdater.config.set('login', login);
 		
 		if( login != '' ) {
 			var pubkey = $('hmu:pubkey').value.trim();
-			GM_setArrayValue('pubkeys', login, pubkey);
+			HMUpdater.config.set('pubkeys', pubkey);
 			
 			var postdata_url = $('hmu:url').value.trim();
 			// hack patam@p carte sans flux
@@ -993,11 +1013,11 @@ HMUpdater.form = {
 			}
 			// end hack
 			
-			GM_setArrayValue('postdata_urls', login, postdata_url);
-			GM_setArrayValue('updateCustom',  login, $('hmu:choice:custom').checked);
+			HMUpdater.config.set('postdata_urls', postdata_url);
+			HMUpdater.config.set('updateCustom', $('hmu:choice:custom').checked);
 			
 			for( var name in webapps ) {
-				GM_setArrayValue('update'+name, login, $('hmu:choice:'+name).checked);
+				HMUpdater.config.set('update'+name, $('hmu:choice:'+name).checked);
 			}
 		}
 	},
@@ -1053,15 +1073,15 @@ HMUpdater.form = {
 		document.body.appendChild(this.html);
 		
 		// Initialisation des champs du formulaire
-		var login  = GM_getValue('login', '');
-		var pubkey = GM_getArrayValue('pubkeys', login, '');
-		var url    = GM_getArrayValue('postdata_urls', login, '');
+		var login  = HMUpdater.config.get('login');
+		var pubkey = HMUpdater.config.get('pubkeys');
+		var url    = HMUpdater.config.get('postdata_urls');
 		
-		var updateCustom  = Boolean(GM_getArrayValue('updateCustom', login, false));
-		$('hmu:choice:custom').checked  = updateCustom;
+		var updateCustom = HMUpdater.config.get('updateCustom');
+		$('hmu:choice:custom').checked = updateCustom;
 		
 		for( name in webapps ) {
-			$('hmu:choice:'+name).checked = Boolean(GM_getArrayValue('update'+name, login, false));
+			$('hmu:choice:'+name).checked = HMUpdater.config.get('update'+name);
 		}
 		
 		if( updateCustom == false ) {
