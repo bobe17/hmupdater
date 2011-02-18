@@ -80,6 +80,7 @@ imageList["small_move"] = "http://data.hordes.fr/gfx/icons/small_move.gif";
 imageList["anchor"]     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB0AAAAQAgMAAACXY5xCAAAAAXNSR0IArs4c6QAAAAlQTFRFHQgQXCsg3at2dnylcgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAABLSURBVAjXLcqxDcAgDETRjxRlB7ZhiSClN8yThn3DnXHh+8VjPT4Y3t6ojhduR0Ax+ki0CUabJAqFkIiQiZCJUGSUlQRmO1HPcun9kAcXQ2R1ivMAAAAASUVORK5CYII=";
 imageList['tickOn']     = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMBAMAAACgrpHpAAAAAXNSR0IArs4c6QAAAA9QTFRFZXQtm5ubgICA0+uIAAAAuS1B0AAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAAA+SURBVAjXJcnBEQAhCEPRHLYBtwRbkAIU0n9NhvgPvMkAdPTFF8+SVGvLnD1Rb4JRYWtlmwx7yGP/OfxX8gLtpgvbL+3EgQAAAABJRU5ErkJggg==";
 imageList['tickOff']    = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAMAgMAAAAv7mRJAAAAAXNSR0IArs4c6QAAAAlQTFRFAABn////AAAAPdfxGgAAAAF0Uk5TAEDm2GYAAAAJcEhZcwAACxMAAAsTAQCanBgAAAAiSURBVAjXY2BABatWNTAwTA0FErNWAokZnCgEWAwsC1IHADVYDWZWHqBeAAAAAElFTkSuQmCC";
+imageList['close']      = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAMAAAC67D+PAAAAAXNSR0IArs4c6QAAAFFQTFRFAABge314e355fX96fX97foB7foF8f4F8f4F9f4J9gIJ9gYN+g4WAhIaBh4mEiIqFiIuGiYuHiouHioyHioyIjI6JjpCLkpSPlJaRlZeSl5mUYY42LgAAAAF0Uk5TAEDm2GYAAAABYktHRACIBR1IAAAACXBIWXMAAAUxAAAFMQG37ShSAAAAB3RJTUUH2wISEw0wuerZ8AAAAEVJREFUCNdjYEACXMwgkpUbSLCI8jAw8IqxgQR4xIVEJHghSvgkpQSgqln5BTlgLHZOYXYQi5EPqIOdnwkkyAgW4EK2AABttAHUyPINZQAAAABJRU5ErkJggg==";
 
 // Si le debug mode n'est pas actif, on écrase l'objet console natif
 if( typeof(console) == 'undefined' ) {// au cas où...
@@ -955,17 +956,20 @@ HMUpdater.message = {
 		HMUpdater.addStyle('#hmu\\:message strong { color:#EDCDA9 }');
 		HMUpdater.addStyle('#hmu\\:message ul { margin:0; padding:0; list-style:none; line-height:1.35; }');
 		HMUpdater.addStyle('#hmu\\:message li:not(:first-child) { border-top:1px solid #DDAB76; margin-top:3px; padding-top:3px; }');
+		HMUpdater.addStyle('#hmu\\:message li:last-child { padding-right: 18px; }');
+		HMUpdater.addStyle('#hmu\\:message img.close { position:absolute; right:5px; bottom:5px; opacity:.5; cursor:pointer; }');
+		HMUpdater.addStyle('#hmu\\:message:hover img.close { opacity:1; }');
 		
 		this.html = document.createElement('div');
 		this.html.setAttribute('id', 'hmu:message');
 		this.html.setAttribute('class', 'hmu:class:box');
-		this.html.appendChild(document.createElement('ul'));
-		
-		var image = document.createElement('img');
-		image.setAttribute('alt', '');
-		image.setAttribute('class', 'pointer');
-		image.setAttribute('src', imageList['anchor']);
-		this.html.appendChild(image);
+		this.html.innerHTML = '<ul></ul>' +
+			'<img alt="" class="pointer" src="'+imageList['anchor']+'">' +
+			'<img alt="" class="close" src="'+imageList['close']+'">';
+		this.html.lastChild.addEventListener('click', function() {
+			clearTimeout(HMUpdater.message.timer);
+			HMUpdater.message.clear();
+		}, false);
 		
 		document.body.appendChild(this.html);
 	}
