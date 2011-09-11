@@ -1,6 +1,6 @@
 /**
  * $Id$
- * Copyright (c) 2008-2010 Aurélien Maille
+ * Copyright (c) 2008-2011 Aurélien Maille
  * Released under the GPL license 
  *
  * Remerciements :
