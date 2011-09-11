@@ -1076,6 +1076,15 @@ HMUpdater.form = {
 		
 		document.body.appendChild(this.html);
 		
+		// Pour masquer le formulaire si on clique en dehors
+		// this.html.lastChild == div.black
+		this.html.lastChild.addEventListener('click', function(evt) {
+			if( this == evt.currentTarget ) {
+				document.body.className = '';
+				this.parentNode.style.display = 'none';
+			}
+		}, false);
+		
 		// Initialisation des champs du formulaire
 		var login  = HMUpdater.config.get('login');
 		var pubkey = HMUpdater.config.get('pubkeys');
