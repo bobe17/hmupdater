@@ -305,11 +305,11 @@ HMUpdater.initialize = function() {
 			this._hmu_onEnd();
 			
 			var hmupdater = document.getElementById('hmupdater');
-			hmupdater.setAttribute('hmu:url', url);
+			hmupdater.setAttribute('data-hmu-url', url);
 			// On ne peut pas récupérer HMU_LAST_VERSION directement dans init(),
 			// il n'est pas encore dispo à ce moment-là sur chrome/chromium...
-			if( !hmupdater.hasAttribute('hmu:last-version') && typeof(HMU_LAST_VERSION) != 'undefined' ) {
-				hmupdater.setAttribute('hmu:last-version', HMU_LAST_VERSION);
+			if( !hmupdater.hasAttribute('data-hmu-last-version') && typeof(HMU_LAST_VERSION) != 'undefined' ) {
+				hmupdater.setAttribute('data-hmu-last-version', HMU_LAST_VERSION);
 			}
 			
 			var evt = document.createEvent('Events');
@@ -326,7 +326,7 @@ HMUpdater.initialize = function() {
 	
 	document.addEventListener('HMUActionPerformed', function(evt) {
 		
-		var url = $('hmupdater').getAttribute('hmu:url');
+		var url = $('hmupdater').getAttribute('data-hmu-url');
 		
 		console.log('HMUActionPerformed event dispatched; url = ' + url);
 		
@@ -382,9 +382,9 @@ HMUpdater.refresh = function(step) {
 	}
 	
 	// Vérification de la dernière version publiée
-	if( $('hmupdater').hasAttribute('hmu:last-version') ) {
+	if( $('hmupdater').hasAttribute('data-hmu-last-version') ) {
 		
-		if( this.checkVersion($('hmupdater').getAttribute('hmu:last-version')) == true ) {
+		if( this.checkVersion($('hmupdater').getAttribute('data-hmu-last-version')) == true ) {
 			this.message.clear();
 			this.message.show(getLang('new_version', '<a href="' + HMU_APPHOME + '">', '</a>'), -1);
 		}
