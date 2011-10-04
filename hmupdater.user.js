@@ -1080,8 +1080,7 @@ HMUpdater.form = {
 		// this.html.lastChild == div.black
 		this.html.lastChild.addEventListener('click', function(evt) {
 			if( this == evt.currentTarget ) {
-				document.body.className = '';
-				this.parentNode.style.display = 'none';
+				HMUpdater.form.hide();
 			}
 		}, false);
 		
