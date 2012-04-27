@@ -90,8 +90,9 @@ if( typeof(console) == 'undefined' ) {// au cas où...
 var name = null;
 var tab  = ["log","info","warn","error","debug","dirxml","dir"];
 while( (name = tab.pop()) != null ) {
-	console[name] = (typeof(console[name]) != 'undefined' && DEBUG_MODE)
-		? console[name] : function() {};
+	if( typeof(console[name]) != 'undefined' && !DEBUG_MODE ) {
+		console[name] = function() {};
+	}
 }
 
 //
