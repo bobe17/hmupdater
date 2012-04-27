@@ -629,12 +629,6 @@ HMUpdater.updateMap = function() {
 	// TODO : temporaire; pour Safari 5 + NinjaKit
 	var doc = new DOMParser().parseFromString('<hordes></hordes>', 'application/xml');
 	
-	if( doc.inputEncoding != null ) {
-		var pi  = doc.createProcessingInstruction('xml',
-			'version="1.0" encoding="' + doc.inputEncoding + '"');
-		doc.insertBefore(pi, doc.documentElement);
-	}
-	
 	var headers = doc.createElement('headers');
 	headers.setAttribute('version',   HMU_VERSION);
 	headers.setAttribute('generator', HMU_APPNAME);
