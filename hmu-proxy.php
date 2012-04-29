@@ -1,7 +1,7 @@
 <?php
 /**
  * $Id$
- * Copyright (c) 2008-2010 Aurélien Maille
+ * Copyright (c) 2008-2012 Aurélien Maille
  * Released under the GPL license
  * 
  * Pseudo-proxy pour HMUpdater, pour les navigateurs qui ne permettent pas
