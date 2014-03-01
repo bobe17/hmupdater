@@ -1,6 +1,6 @@
 /**
  * $Id$
- * Copyright (c) 2008-2012 Aurélien Maille
+ * Copyright (c) 2008-2014 Aurélien Maille
  * Released under the GPL license 
  *
  * Remerciements :
@@ -40,9 +40,6 @@ const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome && !w
 var webapps = {};
 webapps['Patamap'] = { id: 9,  url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', key: null, xml: true };
 webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'BigBroth\'Hordes', key: null, xml: true };
-webapps['HUM']     = { id: 36, url: 'http://www.hordes-ultimate-manager.net/hmupdater/index.php', label: 'Ultimate Manager', key: null, xml: true };
-webapps['LCN']     = { id: 14, url: 'http://www.lacitadellenoire.com/carte.php', label: 'La Citadelle Noire', key: null, xml: false };
-webapps['OEEV']    = { id: 22, url: 'http://www.oeev-hordes.com/', label: 'OEEV', key: null, xml: false };
 
 // Localisation
 var lang = {};
