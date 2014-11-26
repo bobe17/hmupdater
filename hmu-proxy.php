@@ -3,10 +3,10 @@
  * $Id$
  * Copyright (c) 2008-2012 Aurélien Maille
  * Released under the GPL license
- * 
+ *
  * Pseudo-proxy pour HMUpdater, pour les navigateurs qui ne permettent pas
  * les appels cross-domain avec GM_xmlhttpRequest()
- * 
+ *
  * @author  Aurélien Maille <bobe+hordes@webnaute.net>
  * @link    http://dev.webnaute.net/Applications/HMUpdater/
  * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License
@@ -19,7 +19,14 @@ $url  = !empty($_GET['url']) ? trim($_GET['url']) : '';
 $data = !empty($_GET['data']) ? trim($_GET['data']) : '';
 
 if( !preg_match('#^[a-z][a-z0-9+.-]*://([a-zA-Z0-9._-]+)/[^\s<>"{}|\\^[\]`]*$#', $url, $match) ) {
-	header('Bad Request', true, 400);
+	$sapi = substr(PHP_SAPI, 0, 3);
+	if ($sapi == 'cgi' || $sapi == 'fpm') {
+		header('Status: 400 Bad Request');
+	}
+	else {
+		$protocol = (isset($_SERVER['SERVER_PROTOCOL']) ? $_SERVER['SERVER_PROTOCOL'] : 'HTTP/1.0');
+		header(sprintf('%s 400 Bad Request', $protocol));
+	}
 	echo "Your browser sent a request that this server could not understand.";
 	exit;
 }
@@ -39,12 +46,12 @@ if( preg_match('/^<(?:\?xml|hordes)/', $data) ) {
 	if( preg_match('/<headers[^>]+version\s*=\s*("|\')([0-9]+\.[0-9]+)\\1/', $data, $match) ) {
 		$version = $match[1];
 	}
-	
+
 	$charset = 'UTF-8';
 	if( preg_match('/<\?xml[^>]+encoding\s*=\s*("|\')([^"\']+)\\1/', $data, $match) ) {
 		$charset = $match[2];
 	}
-	
+
 	$headers['Content-Type']  = sprintf('application/xml; charset=%s', $charset);
 }
 // raw mode
@@ -87,7 +94,7 @@ if( $xml_mode && $data !== false ) {
 	if( $doc->loadXML($data) ) {
 		$xpath  = new DOMXPath($doc);
 		$result = $xpath->evaluate('/hordes/error/@code');
-		
+
 		if( $result->length == 1 && $result->item(0)->value == 'ok' ) {
 			$errorCode = 1;
 		}
