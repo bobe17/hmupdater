@@ -17,12 +17,12 @@
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour d'une M@p d'objets à partir de hordes.fr
 // @include        http://www.hordes.fr/*
-// @version        1.7
+// @version        1.8
 // ==/UserScript==
 
 (function(){
 
-const HMU_VERSION  = '1.7';
+const HMU_VERSION  = '1.8';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -40,6 +40,9 @@ const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome && !w
 var webapps = {};
 webapps['Patamap'] = { id: 9,  url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', key: null, xml: true };
 webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'BigBroth\'Hordes', key: null, xml: true };
+webapps['HUM']     = { id: 36, url: 'http://www.hordes-ultimate-manager.net/hmupdater/index.php', label: 'Ultimate Manager', key: null, xml: true };
+webapps['LCN']     = { id: 14, url: 'http://www.lacitadellenoire.com/carte.php', label: 'La Citadelle Noire', key: null, xml: false };
+webapps['OEEV']    = { id: 22, url: 'http://www.oeev-hordes.com/', label: 'OEEV', key: null, xml: false };
 
 // Localisation
 var lang = {};
@@ -724,9 +727,12 @@ HMUpdater.sendData = function(webapp, doc) {
 		xhr.onload = function() {
 			if( /name=\"key\"\s+value=\"([a-zA-Z0-9]+)\"/.test(this.responseText) ) {
 				webapp.key = RegExp.$1;
+				HMUpdater.sendData(webapp, doc);
+			} else {
+				console.log('Unable to get secret key for webapp ' + webapp.label);
+				webapp.done = true;
+				HMUpdater.finishUpdate();
 			}
-			
-			HMUpdater.sendData(webapp, doc);
 		};
 		xhr.send(null);
 		
