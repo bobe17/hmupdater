@@ -13,7 +13,7 @@ Ce script permet à un joueur du [jeu hordes](http://www.hordes.fr/) de disposer
 
 Le script permet de mettre à jour un ou plusieurs des sites suivants :
 
- - la [PataM@p](http://www.patamap.com/)
+ - la PataM@p  (N’est plus en service)
  - [BigBroth’Hordes](http://bbh.fred26.fr/)
  - Ultimate Manager (N’est plus en service)
  - « Où En Êtes-Vous ? » (N’est plus en service)

@@ -17,12 +17,12 @@
 // @namespace      http://dev.webnaute.net/Applications/HMUpdater
 // @description    Mise à jour d'une M@p d'objets à partir de hordes.fr
 // @include        http://www.hordes.fr/*
-// @version        1.7
+// @version        1.8
 // ==/UserScript==
 
 (function(){
 
-const HMU_VERSION  = '1.7';
+const HMU_VERSION  = '1.8';
 const HMU_APPNAME  = 'HMUpdater';
 const HMU_TIMEOUT  = 10;// en secondes
 const HMU_APPHOME  = 'http://dev.webnaute.net/Applications/HMUpdater/';
@@ -38,7 +38,6 @@ const GM_AVAILABLE = (typeof(GM_getValue) != 'undefined' && !window.chrome && !w
 // Maps externes bénéficiant d’un accès sécurisé au flux du site hordes.fr
 //
 var webapps = {};
-webapps['Patamap'] = { id: 9,  url: 'http://patamap.com/hmupdater.php', label: 'la Patamap', key: null, xml: true };
 webapps['BBH']     = { id: 51, url: 'http://bbh.fred26.fr/update.php', label: 'BigBroth\'Hordes', key: null, xml: true };
 
 // Localisation
@@ -724,9 +723,12 @@ HMUpdater.sendData = function(webapp, doc) {
 		xhr.onload = function() {
 			if( /name=\"key\"\s+value=\"([a-zA-Z0-9]+)\"/.test(this.responseText) ) {
 				webapp.key = RegExp.$1;
+				HMUpdater.sendData(webapp, doc);
+			} else {
+				console.log('Unable to get secret key for webapp ' + webapp.label);
+				webapp.done = true;
+				HMUpdater.finishUpdate();
 			}
-			
-			HMUpdater.sendData(webapp, doc);
 		};
 		xhr.send(null);
 		

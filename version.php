@@ -2,7 +2,7 @@
 
 header('Cache-Control: public, max-age=3600');
 
-define('HMU_LAST_VERSION', '1.4');
+define('HMU_LAST_VERSION', '1.8');
 
 $output = !empty($_GET['output']) ? trim($_GET['output']) : '';
 
